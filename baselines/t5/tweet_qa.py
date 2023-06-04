@@ -124,7 +124,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
             predictions = [{"prediction_text": p, "id": str(_n)} for _n, p in enumerate(generation_decode)]
             if target_metric is not None:
                 return metric.compute(predictions=predictions, references=references)[target_metric]
-            return metric.compute(predictions=predictions, references=references)[target_metric]
+            return metric.compute(predictions=predictions, references=references)
 
         return compute_metric
 
@@ -202,36 +202,34 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
         with open(f"{output_dir}/model/evaluation_metrics.json", 'w') as f:
             json.dump(result, f)
 
-#     logging.info('uploading to huggingface')
-#     url = create_repo(model_alias, organization=model_organization, exist_ok=True)
-#     args = {"use_auth_token": use_auth_token, "repo_url": url, "organization": model_organization}
-#     model = load_model(model_name=f"{output_dir}/model", cache_dir=cache_dir, use_auth_token=use_auth_token, low_cpu_mem_usage=model_low_cpu_mem_usage)
-#     model.push_to_hub(model_alias, **args)
-#     tokenizer.push_to_hub(model_alias, **args)
-#     with open(f"{output_dir}/model/README.md", "w") as f:
-#         readme = f"""
-# # {model_organization}/{model_alias}
-#
-# This is [{model_name}](https://huggingface.co/{opt.model}) fine-tuned on [{dataset} ({dataset_name})](https://huggingface.co/datasets/{dataset})
-# for analogy generation, which is to generate a word pair (eg. `bird is to crow`) given a query (eg. `mammal is to whale`)
-# so that the query and the generated word pair form an analogy statement.
-#
-# ### Usage
-#
-# ```python
-# from transformers import pipeline
-#
-# pipe = pipeline('text2text-generation', model="{opt.repo_id}")
-# output = pipe("{task_prefix} {template_header.replace('<subj-a>', 'mammal').replace('<obj-a>', 'whale')}")
-# print(output)
-# >>> [{{'generated_text': 'bird is to crow'}}]
-# ```
-#         """
-#         f.write(readme)
-#     if os.path.exists(self.best_run_hyperparameters_path):
-#         shutil.copy2(self.best_run_hyperparameters_path, pj(model_alias, 'best_run_hyperparameters.json'))
-#     os.system(
-#         f"cd {model_alias} && git lfs install && git add . && git commit -m 'model update' && git push && cd ../")
+    if model_alias is not None:
+        assert model_organization is not None, "model_organization must be specified when model_alias is specified"
+        logging.info('uploading to huggingface')
+        url = create_repo(model_alias, organization=model_organization, exist_ok=True)
+        args = {"use_auth_token": use_auth_token, "repo_url": url, "organization": model_organization}
+        model = load_model(model_name=f"{output_dir}/model", cache_dir=cache_dir, use_auth_token=use_auth_token, low_cpu_mem_usage=model_low_cpu_mem_usage)
+        model.push_to_hub(model_alias, **args)
+        tokenizer.push_to_hub(model_alias, **args)
+        with open(f"{output_dir}/model/README.md", "w") as f:
+            readme = f"""
+# {model_organization}/{model_alias}
+
+This is [{model_name}](https://huggingface.co/{opt.model}) fine-tuned on [{dataset} ({dataset_name})](https://huggingface.co/datasets/{dataset}).
+
+### Usage
+
+```python
+from transformers import pipeline
+
+pipe = pipeline('text2text-generation', model="{model_organization}/{model_alias}")
+output = pipe("{task_prefix}: {}")
+```
+        """
+        f.write(readme)
+    if os.path.exists(self.best_run_hyperparameters_path):
+        shutil.copy2(self.best_run_hyperparameters_path, pj(model_alias, 'best_run_hyperparameters.json'))
+    os.system(
+        f"cd {model_alias} && git lfs install && git add . && git commit -m 'model update' && git push && cd ../")
 
 
 if __name__ == '__main__':
