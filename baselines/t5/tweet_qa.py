@@ -113,17 +113,16 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
 
     def compute_metric(eval_pred):  # for parameter search
         predictions, reference_token_ids = eval_pred
+        # format reference
         references_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in reference_token_ids]
-        pprint(references_decode)
+        references = [{"answers": {"answer_start": [100], "text": [r]}, "id": str(_n)} for _n, r in enumerate(references_decode)]
+        # format prediction
+        print(predictions)
         input()
-        references = [{"answers": {"answer_start": [100], "text": [r]}, "id": str(n)} for n, r in
-                      enumerate(gold_reference)]
-
         prediction = [{"prediction_text": p, "id": str(n)} for n, p in enumerate(prediction)]
 
         print(references)
         input()
-        print(predictions)
 
         return metric.compute(predictions=predictions, references=references)['f1']
 
