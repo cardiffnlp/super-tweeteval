@@ -1,5 +1,5 @@
 """
-python tweet_qa.py --search-range-lr 0.0005 --search-range-epoch 2 --search-range-batch 32 --use-auth-token
+python tweet_qa.py
 """
 import json
 import logging
@@ -21,12 +21,7 @@ from evaluate import load
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # turn-off the warning message
 
 
-def load_language_model(
-        model_name: str = "t5-small",
-        cache_dir: str = None,
-        use_auth_token: bool = False,
-        low_cpu_mem_usage: bool = False,
-        return_dict: bool = False):
+def load_language_model(model_name: str, cache_dir: str = None, use_auth_token: bool = False, low_cpu_mem_usage: bool = False, return_dict: bool = False):
     """ load language model from huggingface model hub """
     # config & tokenizer
     local_files_only = True
@@ -199,7 +194,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset-split-test', default="test", type=str)
     parser.add_argument('--search-range-lr', nargs='+', default=None, type=float)
     parser.add_argument('--search-range-epoch', nargs='+', default=None, type=int)
-    parser.add_argument('--search-range-batch', nargs='+', default=None, type=int)
+    parser.add_argument('--search-list-batch', nargs='+', default=None, type=int)
     parser.add_argument('--down-sample-train', default=None, type=int)
     parser.add_argument('--down-sample-validation', default=2000, type=int)
     parser.add_argument('--random-seed', default=42, type=int)
