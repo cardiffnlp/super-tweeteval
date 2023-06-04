@@ -78,7 +78,6 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
         "num_train_epochs": tune.choice(list(range(search_range_epoch[0], search_range_epoch[1]))),
         "per_device_train_batch_size": tune.choice(search_list_batch)
     }
-    # logging.info(f'[SEARCH SPACE]\n{json.dumps(search_space, indent=4)}')
     resources_per_trial = {'cpu': multiprocessing.cpu_count() if parallel_cpu else 1, "gpu": torch.cuda.device_count()}
     logging.info(f'[RESOURCE]\n{json.dumps(resources_per_trial, indent=4)}')
 
@@ -118,7 +117,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
             model_inputs['labels'] = tokenizer(text_target=i[dataset_column_answer], truncation=True)['input_ids']
             tokenized_dataset[s].append(model_inputs)
 
-        if down_sample is not None:
+        if down_sample is not None and len(tmp) > down_sample:
             tokenized_dataset[f"{s}_ds"] = []
             tmp = tmp.select(list(range(down_sample)))
             for i in tmp:
