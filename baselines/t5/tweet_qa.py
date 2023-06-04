@@ -116,7 +116,10 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
         print(reference_token_ids)
         for r in reference_token_ids:
             print(r)
-            print([tokenizer.convert_ids_to_tokens(_r) for _r in r])
+            for _r in r:
+                print(_r)
+                tokenizer.convert_ids_to_tokens([_r])
+            print(tokenizer.convert_ids_to_tokens(r))
         references_decode = [tokenizer.decode(r) for r in reference_token_ids]
         print(references_decode)
         input()
