@@ -20,7 +20,7 @@ from huggingface_hub import create_repo
 
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # turn-off the warning message
-os.environ["WANDB_DISABLED"] = "true"
+# os.environ["WANDB_DISABLED"] = "true"
 local_files_only = True
 try:
     urllib.request.urlopen('http://google.com')
@@ -126,6 +126,8 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
                 return metric.compute(predictions=predictions, references=references)[target_metric]
             return metric.compute(predictions=predictions, references=references)[target_metric]
 
+        return compute_metric
+
     if not os.path.exists(f"{output_dir}/model/pytorch_model.bin"):
         trainer = Seq2SeqTrainer(
             # model=model,
@@ -183,13 +185,15 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
     # get metric on the test set
     if 'test' in tokenized_dataset and not os.path.exists(f"{output_dir}/model/evaluation_metrics.json"):
         logging.info("run evaluation on test set")
-        trainer = Seq2SeqTrainer(
-            model=load_model(
+        model = load_model(
                 model_name=f"{output_dir}/model",
                 cache_dir=cache_dir,
                 use_auth_token=use_auth_token,
-                low_cpu_mem_usage=model_low_cpu_mem_usage),
+                low_cpu_mem_usage=model_low_cpu_mem_usage)
+        trainer = Seq2SeqTrainer(
+            model=model,
             args=Seq2SeqTrainingArguments(output_dir=f"{output_dir}/runs", evaluation_strategy="no"),
+            data_collator=transformers.DataCollatorForSeq2Seq(tokenizer, model=model),
             eval_dataset=tokenized_dataset['test'],
             compute_metrics=get_metric()
         )
