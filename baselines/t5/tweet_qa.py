@@ -1,6 +1,8 @@
 """
 python tweet_qa.py -m 'google/flan-t5-small' --model-alias 'flan-t5-small-tweetqa' --n-trials 20 \
 --use-auth-token --model-organization cardiffnlp
+rm -rf ray
+rm -rf ckpt
 python tweet_qa.py -m 'google/flan-t5-base' --model-alias 'flan-t5-base-tweetqa' --n-trials 20 \
 --use-auth-token --model-organization cardiffnlp
 python tweet_qa.py -m 'google/flan-t5-small' --model-alias 'flan-t5-small-tweetqa' --n-trials 20 \
@@ -16,6 +18,7 @@ import multiprocessing
 import argparse
 import gc
 from typing import List
+from distutils.dir_util import copy_tree
 
 import torch
 import transformers
@@ -219,10 +222,14 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         tokenizer.push_to_hub(model_alias, **args)
         # repo = Repository(model_alias, organization=model_organization)
         repo = Repository(model_alias, f"{model_organization}/{model_alias}")
-
+        copy_tree(f"{output_dir}/model/hyperparameters.json", f"{model_alias}/hyperparameters.json")
+        if os.path.exists(f"{output_dir}/model/prediction_test.txt"):
+            copy_tree(f"{output_dir}/model/prediction_test.txt", f"{model_alias}/prediction_test.txt")
+        if os.path.exists(f"{output_dir}/model/evaluation_metrics.json"):
+            copy_tree(f"{output_dir}/model/evaluation_metrics.json", f"{model_alias}/evaluation_metrics.json")
         sample = [f"context: {i[dataset_column_passage]}, question: {i[dataset_column_question]}" for i in dataset_instance[dataset_split_train]][:3]
         widget = "\n".join([f"- text: {t}\n  example_title: example {_n + 1}" for _n, t in enumerate(sample)])
-        with open(f"{output_dir}/model/README.md", "w") as f:
+        with open(f"{model_alias}/README.md", "w") as f:
             f.write(f"""
 ---
 widget:{widget}
