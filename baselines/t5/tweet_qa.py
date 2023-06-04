@@ -127,6 +127,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
 
     # metric
     metric = load("squad")
+
     def compute_metric(eval_pred):  # for parameter search
         predictions, reference_token_ids = eval_pred
         # format reference
@@ -138,7 +139,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         generation_token_id[logit.min(-1) == -100] = -100
         generation_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in generation_token_id]
         predictions = [{"prediction_text": p, "id": str(_n)} for _n, p in enumerate(generation_decode)]
-        return metric.compute(predictions=predictions, references=references)["f1"]
+        return {"f1": metric.compute(predictions=predictions, references=references)["f1"]}
 
     if not os.path.exists(f"{output_dir}/model/pytorch_model.bin"):
         trainer = Seq2SeqTrainer(
@@ -209,9 +210,9 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
                 f.write("\n".join(output))
         with open(f"{output_dir}/model/prediction_test.txt"):
             output = [i for i in f.read().split("\n") if len(i) > 0]
-            predictions = [{"prediction_text": p, "id": str(_n)} for _n, p in enumerate(output)]
-        references = [{"answers": {"answer_start": [100], "text": [r[dataset_column_answer]]}, "id": str(_n)} for _n, r in enumerate(dataset_instance[dataset_split_test])]
-        eval_metric = metric.compute(predictions=predictions, references=references)
+            _predictions = [{"prediction_text": p, "id": str(_n)} for _n, p in enumerate(output)]
+        _references = [{"answers": {"answer_start": [100], "text": [r[dataset_column_answer]]}, "id": str(_n)} for _n, r in enumerate(dataset_instance[dataset_split_test])]
+        eval_metric = metric.compute(predictions=_predictions, references=_references)
         logging.info(json.dumps(eval_metric, indent=4))
         with open(f"{output_dir}/model/evaluation_metrics.json", 'w') as f:
             json.dump(eval_metric, f)
