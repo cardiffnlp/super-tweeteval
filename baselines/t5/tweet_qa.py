@@ -117,7 +117,10 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
         references_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in reference_token_ids]
         references = [{"answers": {"answer_start": [100], "text": [r]}, "id": str(_n)} for _n, r in enumerate(references_decode)]
         # format prediction
-        print(predictions)
+        print(len(predictions))
+        a, b = predictions
+        print(a.shape)
+        print(b.shape)
         input()
         prediction = [{"prediction_text": p, "id": str(n)} for n, p in enumerate(prediction)]
 
