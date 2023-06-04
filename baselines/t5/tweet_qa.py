@@ -260,7 +260,6 @@ if __name__ == '__main__':
     parser.add_argument('--ray-result-dir', default=None, type=str)
     parser.add_argument('--model-alias', default=None, type=str)
     parser.add_argument('--model-organization', default=None, type=str)
-    parser.add_argument('--model-organization', default=None, type=str)
     opt = parser.parse_args()
 
     train(model_name=opt.model_name,
@@ -286,4 +285,6 @@ if __name__ == '__main__':
           parallel_cpu=opt.parallel_cpu,
           cache_dir=opt.cache_dir,
           output_dir=opt.output_dir,
-          ray_result_dir=opt.ray_result_dir)
+          ray_result_dir=opt.ray_result_dir,
+          model_alias=opt.model_alias,
+          model_organization=opt.model_organization)
