@@ -127,6 +127,11 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
             eval_steps=eval_step,
             seed=random_seed
         ),
+        data_collator=transformers.DataCollatorForSeq2Seq(tokenizer, model=load_model(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            use_auth_token=use_auth_token,
+            low_cpu_mem_usage=model_low_cpu_mem_usage)),
         train_dataset=tokenized_dataset['train_ds'],
         eval_dataset=tokenized_dataset['validation_ds'],
         compute_metrics=compute_metric,
