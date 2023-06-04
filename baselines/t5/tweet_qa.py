@@ -7,15 +7,16 @@ import os
 import urllib
 import multiprocessing
 import argparse
+import shutil
 from typing import List
-from pprint import pprint
 
 import torch
-from datasets import load_dataset
 import transformers
+from datasets import load_dataset
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
 from ray import tune, init
 from evaluate import load
+from huggingface_hub import create_repo
 
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # turn-off the warning message
@@ -52,7 +53,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
           dataset_split_validation: str, dataset_split_test: str, search_range_lr: List, search_range_epoch: List,
           search_list_batch: List, down_sample_train: int, down_sample_validation: int, random_seed: int,
           use_auth_token: bool, n_trials: int, eval_step: int, parallel_cpu: bool, cache_dir: str, output_dir: str,
-          ray_result_dir: str):
+          ray_result_dir: str, model_alias: str, model_organization: str):
     """ fine-tune seq2seq model on qa """
     logging.info(f'[CONFIG]\n\t *LM: {model_name}, \n\t *Data: {dataset} ({dataset_name}), \n\t *Num of Trial: {n_trials}')
     # set up the output directory
@@ -67,9 +68,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
     assert len(search_range_lr) == 2, f"`search_range_lr` should contain [min_lr, max_lr]: {search_range_lr}"
     search_range_epoch = [2, 6] if search_range_epoch is None else search_range_epoch
     assert len(search_range_epoch) == 2, f"`search_range_epoch` should contain [min_epoch, max_epoch]: {search_range_epoch}"
-    search_range_epoch = [2, 6] if search_range_epoch is None else search_range_epoch
-    assert len(search_range_epoch) == 2, f"`search_range_epoch` should contain [min_epoch, max_epoch]: {search_range_epoch}"
-    search_list_batch = [32, 64] if search_list_batch is None else search_list_batch
+    search_list_batch = [64, 128] if search_list_batch is None else search_list_batch
     search_space = {
         "learning_rate": tune.loguniform(search_range_lr[0], search_range_lr[1]),
         "num_train_epochs": tune.choice(list(range(search_range_epoch[0], search_range_epoch[1]))),
@@ -127,57 +126,108 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
                 return metric.compute(predictions=predictions, references=references)[target_metric]
             return metric.compute(predictions=predictions, references=references)[target_metric]
 
-    trainer = Seq2SeqTrainer(
-        # model=model,
-        args=Seq2SeqTrainingArguments(
-            output_dir=f"{output_dir}/runs",
-            evaluation_strategy="steps",
-            eval_steps=eval_step,
-            seed=random_seed
-        ),
-        data_collator=transformers.DataCollatorForSeq2Seq(tokenizer, model=load_model(
-            model_name=model_name,
-            cache_dir=cache_dir,
-            use_auth_token=use_auth_token,
-            low_cpu_mem_usage=model_low_cpu_mem_usage)),
-        train_dataset=tokenized_dataset['train_ds'],
-        eval_dataset=tokenized_dataset['validation_ds'],
-        compute_metrics=get_metric("f1"),
-        model_init=lambda x: load_model(
-            model_name=model_name,
-            cache_dir=cache_dir,
-            use_auth_token=use_auth_token,
-            low_cpu_mem_usage=model_low_cpu_mem_usage)
-    )
-    os.makedirs(f"{output_dir}/model", exist_ok=True)
-    if not os.path.exists(f"{output_dir}/model/hyperparameters.json"):
-        # grid search
-        best_run = trainer.hyperparameter_search(
-            hp_space=lambda x: search_space,
-            local_dir=ray_result_dir,
-            direction="maximize",
-            backend="ray",
-            n_trials=n_trials,
-            resources_per_trial=resources_per_trial
+    if not os.path.exists(f"{output_dir}/model/pytorch_model.bin"):
+        trainer = Seq2SeqTrainer(
+            # model=model,
+            args=Seq2SeqTrainingArguments(
+                output_dir=f"{output_dir}/runs",
+                evaluation_strategy="steps",
+                eval_steps=eval_step,
+                seed=random_seed
+            ),
+            data_collator=transformers.DataCollatorForSeq2Seq(tokenizer, model=load_model(
+                model_name=model_name,
+                cache_dir=cache_dir,
+                use_auth_token=use_auth_token,
+                low_cpu_mem_usage=model_low_cpu_mem_usage)),
+            train_dataset=tokenized_dataset['train_ds'],
+            eval_dataset=tokenized_dataset['validation_ds'],
+            compute_metrics=get_metric("f1"),
+            model_init=lambda x: load_model(
+                model_name=model_name,
+                cache_dir=cache_dir,
+                use_auth_token=use_auth_token,
+                low_cpu_mem_usage=model_low_cpu_mem_usage)
         )
-        with open(f"{output_dir}/model/hyperparameters.json", 'w') as f:
-            json.dump(best_run.hyperparameters, f)
-    else:
-        logging.info("skip hyperparameter search (already done)")
+        os.makedirs(f"{output_dir}/model", exist_ok=True)
+        if not os.path.exists(f"{output_dir}/model/hyperparameters.json"):
+            # grid search
+            best_run = trainer.hyperparameter_search(
+                hp_space=lambda x: search_space,
+                local_dir=ray_result_dir,
+                direction="maximize",
+                backend="ray",
+                n_trials=n_trials,
+                resources_per_trial=resources_per_trial
+            )
+            with open(f"{output_dir}/model/hyperparameters.json", 'w') as f:
+                json.dump(best_run.hyperparameters, f)
+        else:
+            logging.info("skip hyperparameter search (already done)")
 
-    # fine-tuning with the best config
-    logging.info(f"fine-tuning with the best config")
-    with open(f"{output_dir}/model/hyperparameters.json") as f:
-        best_hyperparameters = json.load(f)
-    for n, v in best_hyperparameters.items():
-        setattr(trainer.args, n, v)
-    setattr(trainer, "train_dataset", tokenized_dataset['train'])
-    setattr(trainer.args, "evaluation_strategy", 'no')
-    trainer.train()
-    # model = trainer.model
-    trainer.save_model(f"{output_dir}/model")
-    tokenizer.save_pretrained(f"{output_dir}/model")
-    logging.info(f"model saved at {output_dir}/model")
+        # fine-tuning with the best config
+        logging.info(f"fine-tuning with the best config")
+        with open(f"{output_dir}/model/hyperparameters.json") as f:
+            best_hyperparameters = json.load(f)
+        for n, v in best_hyperparameters.items():
+            setattr(trainer.args, n, v)
+        setattr(trainer, "train_dataset", tokenized_dataset['train'])
+        setattr(trainer.args, "evaluation_strategy", 'no')
+        trainer.train()
+        trainer.save_model(f"{output_dir}/model")
+        tokenizer.save_pretrained(f"{output_dir}/model")
+        logging.info(f"model saved at {output_dir}/model")
+    else:
+        logging.info("skip hyperparameter search & model training (already done)")
+
+    # get metric on the test set
+    if 'test' in tokenized_dataset and not os.path.exists(f"{output_dir}/model/evaluation_metrics.json"):
+        logging.info("run evaluation on test set")
+        trainer = Seq2SeqTrainer(
+            model=load_model(
+                model_name=f"{output_dir}/model",
+                cache_dir=cache_dir,
+                use_auth_token=use_auth_token,
+                low_cpu_mem_usage=model_low_cpu_mem_usage),
+            args=Seq2SeqTrainingArguments(output_dir=f"{output_dir}/runs", evaluation_strategy="no"),
+            eval_dataset=tokenized_dataset['test'],
+            compute_metrics=get_metric()
+        )
+        result = {k: v for k, v in trainer.evaluate().items()}
+        logging.info(json.dumps(result, indent=4))
+        with open(f"{output_dir}/model/evaluation_metrics.json", 'w') as f:
+            json.dump(result, f)
+
+#     logging.info('uploading to huggingface')
+#     url = create_repo(model_alias, organization=model_organization, exist_ok=True)
+#     args = {"use_auth_token": use_auth_token, "repo_url": url, "organization": model_organization}
+#     model = load_model(model_name=f"{output_dir}/model", cache_dir=cache_dir, use_auth_token=use_auth_token, low_cpu_mem_usage=model_low_cpu_mem_usage)
+#     model.push_to_hub(model_alias, **args)
+#     tokenizer.push_to_hub(model_alias, **args)
+#     with open(f"{output_dir}/model/README.md", "w") as f:
+#         readme = f"""
+# # {model_organization}/{model_alias}
+#
+# This is [{model_name}](https://huggingface.co/{opt.model}) fine-tuned on [{dataset} ({dataset_name})](https://huggingface.co/datasets/{dataset})
+# for analogy generation, which is to generate a word pair (eg. `bird is to crow`) given a query (eg. `mammal is to whale`)
+# so that the query and the generated word pair form an analogy statement.
+#
+# ### Usage
+#
+# ```python
+# from transformers import pipeline
+#
+# pipe = pipeline('text2text-generation', model="{opt.repo_id}")
+# output = pipe("{task_prefix} {template_header.replace('<subj-a>', 'mammal').replace('<obj-a>', 'whale')}")
+# print(output)
+# >>> [{{'generated_text': 'bird is to crow'}}]
+# ```
+#         """
+#         f.write(readme)
+#     if os.path.exists(self.best_run_hyperparameters_path):
+#         shutil.copy2(self.best_run_hyperparameters_path, pj(model_alias, 'best_run_hyperparameters.json'))
+#     os.system(
+#         f"cd {model_alias} && git lfs install && git add . && git commit -m 'model update' && git push && cd ../")
 
 
 if __name__ == '__main__':
@@ -208,6 +258,9 @@ if __name__ == '__main__':
     parser.add_argument('--cache-dir', default=None, type=str)
     parser.add_argument('--output-dir', default=None, type=str)
     parser.add_argument('--ray-result-dir', default=None, type=str)
+    parser.add_argument('--model-alias', default=None, type=str)
+    parser.add_argument('--model-organization', default=None, type=str)
+    parser.add_argument('--model-organization', default=None, type=str)
     opt = parser.parse_args()
 
     train(model_name=opt.model_name,
