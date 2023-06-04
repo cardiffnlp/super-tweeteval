@@ -79,26 +79,6 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
     init(ignore_reinit_error=True, num_cpus=resources_per_trial['cpu'])
     logging.info(f'[RESOURCE]\n{json.dumps(resources_per_trial, indent=4)}')
 
-    # metric
-    metric = load("squad")
-
-    def compute_metric(eval_pred):  # for parameter search
-        predictions, reference_token_ids = eval_pred
-        references_decode = tokenizer.decode(reference_token_ids)
-        print(references_decode)
-        input()
-        references = [{"answers": {"answer_start": [100], "text": [r]}, "id": str(n)} for n, r in
-                      enumerate(gold_reference)]
-        print(references)
-        input()
-        print(predictions)
-
-        return metric.compute(predictions=predictions, references=references)['f1']
-
-    def compute_metric_all(eval_pred):  # for final evaluation
-        predictions, references = eval_pred
-        return metric.compute(predictions=predictions, references=references)
-
     # dataset process
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_name, cache_dir=cache_dir, local_files_only=local_files_only, use_auth_token=use_auth_token)
@@ -127,6 +107,27 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
                 tokenized_dataset[f"{s}_ds"].append(model_inputs)
         else:
             tokenized_dataset[f"{s}_ds"] = tokenized_dataset[s]
+
+    # metric
+    metric = load("squad")
+
+    def compute_metric(eval_pred):  # for parameter search
+        predictions, reference_token_ids = eval_pred
+        references_decode = tokenizer.decode(reference_token_ids)
+        print(references_decode)
+        input()
+        references = [{"answers": {"answer_start": [100], "text": [r]}, "id": str(n)} for n, r in
+                      enumerate(gold_reference)]
+        print(references)
+        input()
+        print(predictions)
+
+        return metric.compute(predictions=predictions, references=references)['f1']
+
+    def compute_metric_all(eval_pred):  # for final evaluation
+        predictions, references = eval_pred
+        return metric.compute(predictions=predictions, references=references)
+
 
     trainer = Seq2SeqTrainer(
         # model=model,
