@@ -19,6 +19,7 @@ from evaluate import load
 
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # turn-off the warning message
+os.environ["WANDB_DISABLED"] = "true"
 local_files_only = True
 try:
     urllib.request.urlopen('http://google.com')
@@ -146,6 +147,8 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
     os.makedirs(f"{output_dir}/model", exist_ok=True)
     if not os.path.exists(f"{output_dir}/model/hyperparameters.json"):
         # grid search
+        trainer.train()
+        input()
         best_run = trainer.hyperparameter_search(
             hp_space=lambda x: search_space,
             local_dir=ray_result_dir,
