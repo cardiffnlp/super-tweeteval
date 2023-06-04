@@ -2,4 +2,5 @@ torch
 transformers
 datasets
 evaluate
+accelerate
 ray[tune]

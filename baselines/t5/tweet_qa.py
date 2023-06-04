@@ -14,23 +14,21 @@ import torch
 from datasets import load_dataset
 import transformers
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
-from ray import tune
+from ray import tune, init
 from evaluate import load
 
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # turn-off the warning message
+local_files_only = True
+try:
+    urllib.request.urlopen('http://google.com')
+except:
+    local_files_only = False
 
 
-def load_language_model(model_name: str, cache_dir: str = None, use_auth_token: bool = False, low_cpu_mem_usage: bool = False, return_dict: bool = False):
+def load_model(model_name: str, cache_dir: str = None, use_auth_token: bool = False, low_cpu_mem_usage: bool = False):
     """ load language model from huggingface model hub """
     # config & tokenizer
-    local_files_only = True
-    try:
-        urllib.request.urlopen('http://google.com')
-    except:
-        local_files_only = False
-    tokenizer = transformers.AutoTokenizer.from_pretrained(
-        model_name, cache_dir=cache_dir, local_files_only=local_files_only, use_auth_token=use_auth_token)
     config = transformers.AutoConfig.from_pretrained(
         model_name, local_files_only=local_files_only, cache_dir=cache_dir, use_auth_token=use_auth_token)
     if config.model_type == 't5':  # T5 model requires T5ForConditionalGeneration class
@@ -44,10 +42,8 @@ def load_language_model(model_name: str, cache_dir: str = None, use_auth_token: 
     else:
         raise ValueError(f'unsupported model type: {config.model_type}')
     param = {'config': config, "local_files_only": local_files_only, "use_auth_token": use_auth_token, "low_cpu_mem_usage": low_cpu_mem_usage, "cache_dir": cache_dir}
-    if return_dict:
-        return model_class(model_name, return_dict=True, **param)
     model = model_class(model_name, **param)
-    return config, tokenizer, model
+    return model
 
 
 def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, dataset: str, dataset_name: str,
@@ -79,14 +75,8 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
         "per_device_train_batch_size": tune.choice(search_list_batch)
     }
     resources_per_trial = {'cpu': multiprocessing.cpu_count() if parallel_cpu else 1, "gpu": torch.cuda.device_count()}
+    init(ignore_reinit_error=True, num_cpus=resources_per_trial['cpu'])
     logging.info(f'[RESOURCE]\n{json.dumps(resources_per_trial, indent=4)}')
-
-    # load model
-    config, tokenizer, model = load_language_model(
-        model_name=model_name,
-        cache_dir=cache_dir,
-        use_auth_token=use_auth_token,
-        low_cpu_mem_usage=model_low_cpu_mem_usage)
 
     # metric
     metric = load("squad")
@@ -101,6 +91,8 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
         return metric.compute(predictions=predictions, references=references)
 
     # dataset process
+    tokenizer = transformers.AutoTokenizer.from_pretrained(
+        model_name, cache_dir=cache_dir, local_files_only=local_files_only, use_auth_token=use_auth_token)
     dataset_split = {
         "train": [dataset_split_train, down_sample_train],
         "validation": [dataset_split_validation, down_sample_validation],
@@ -128,7 +120,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
             tokenized_dataset[f"{s}_ds"] = tokenized_dataset[s]
 
     trainer = Seq2SeqTrainer(
-        model=model,
+        # model=model,
         args=Seq2SeqTrainingArguments(
             output_dir=f"{output_dir}/runs",
             evaluation_strategy="steps",
@@ -138,12 +130,11 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
         train_dataset=tokenized_dataset['train_ds'],
         eval_dataset=tokenized_dataset['validation_ds'],
         compute_metrics=compute_metric,
-        model_init=lambda x: load_language_model(
+        model_init=lambda x: load_model(
             model_name=model_name,
             cache_dir=cache_dir,
             use_auth_token=use_auth_token,
-            low_cpu_mem_usage=model_low_cpu_mem_usage,
-            return_dict=True)
+            low_cpu_mem_usage=model_low_cpu_mem_usage)
     )
     os.makedirs(f"{output_dir}/model", exist_ok=True)
     if not os.path.exists(f"{output_dir}/model/hyperparameters.json"):
