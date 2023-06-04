@@ -1,5 +1,5 @@
 """
-python tweet_qa.py --use-auth-token --model-alias tmp model-organization cardiffnlp
+python tweet_qa.py --use-auth-token --model-alias tmp --model-organization cardiffnlp
 """
 import json
 import logging
@@ -210,8 +210,8 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         model = load_model(model_name=f"{output_dir}/model")
         model.push_to_hub(model_alias, **args)
         tokenizer.push_to_hub(model_alias, **args)
-        repo = Repository(model_alias, organization=model_organization)
-        # repo = Repository(model_alias, f"{model_organization}/{model_alias}")
+        # repo = Repository(model_alias, organization=model_organization)
+        repo = Repository(model_alias, f"{model_organization}/{model_alias}")
 
         sample = [f"context: {i[dataset_column_passage]}, question: {i[dataset_column_question]}" for i in dataset_instance[dataset_split_train]][:3]
         widget = "\n".join([f"- text: {t}\n  example_title: example {_n + 1}" for _n, t in enumerate(sample)])
