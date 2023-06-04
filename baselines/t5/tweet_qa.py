@@ -83,12 +83,11 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
     metric = load("squad")
 
     def compute_metric(eval_pred):  # for parameter search
-        for i in eval_pred:
-            print(i)
-        pprint(eval_pred)
         predictions, references = eval_pred
-        print(predictions)
         print(references)
+        input()
+        print(predictions)
+
         return metric.compute(predictions=predictions, references=references)['f1']
 
     def compute_metric_all(eval_pred):  # for final evaluation
