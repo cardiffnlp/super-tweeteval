@@ -78,7 +78,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
         "num_train_epochs": tune.choice(list(range(search_range_epoch[0], search_range_epoch[1]))),
         "per_device_train_batch_size": tune.choice(search_list_batch)
     }
-    logging.info(f'[SEARCH SPACE]\n{json.dumps(search_space, indent=4)}')
+    # logging.info(f'[SEARCH SPACE]\n{json.dumps(search_space, indent=4)}')
     resources_per_trial = {'cpu': multiprocessing.cpu_count() if parallel_cpu else 1, "gpu": torch.cuda.device_count()}
     logging.info(f'[RESOURCE]\n{json.dumps(resources_per_trial, indent=4)}')
 
