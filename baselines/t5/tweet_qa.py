@@ -113,14 +113,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
 
     def compute_metric(eval_pred):  # for parameter search
         predictions, reference_token_ids = eval_pred
-        print(reference_token_ids)
-        for r in reference_token_ids:
-            print(r)
-            for _r in r:
-                print(_r)
-                tokenizer.convert_ids_to_tokens([_r])
-            print(tokenizer.convert_ids_to_tokens(r))
-        references_decode = [tokenizer.decode(r) for r in reference_token_ids]
+        references_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r))) for r in reference_token_ids]
         print(references_decode)
         input()
         references = [{"answers": {"answer_start": [100], "text": [r]}, "id": str(n)} for n, r in
