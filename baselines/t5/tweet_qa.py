@@ -237,13 +237,9 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         if os.path.exists(f"{output_dir}/model/evaluation_metrics.json"):
             copyfile(f"{output_dir}/model/evaluation_metrics.json", f"{model_alias}/evaluation_metrics.json")
         sample = [f'context: {i[dataset_column_passage]}, question: {i[dataset_column_question]}' for i in dataset_instance[dataset_split_train]]
-        sample = [i for i in sample if '"' not in i and "'" not in i]
-        print(sample)
-        sample = sample[:3]
+        sample = [i for i in sample if '"' not in i and "'" not in i][:3]
         widget = "\n".join([f'- text: "{t}"\n  example_title: example {_n + 1}' for _n, t in enumerate(sample)])
         with open(f"{model_alias}/README.md", "w") as f:
-
-
             f.write(f"""
 ---
 widget:
