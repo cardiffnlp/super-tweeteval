@@ -1,5 +1,5 @@
 """
-python tweet_qa.py
+python tweet_qa.py --use-auth-token --model-alias tmp model-organization cardiffnlp
 """
 import json
 import logging
@@ -7,20 +7,20 @@ import os
 import urllib
 import multiprocessing
 import argparse
-import shutil
+import gc
 from typing import List
 
 import torch
 import transformers
 from datasets import load_dataset
-from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
+from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments, pipeline
 from ray import tune, init
 from evaluate import load
-from huggingface_hub import create_repo
+from huggingface_hub import Repository
 
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # turn-off the warning message
-# os.environ["WANDB_DISABLED"] = "true"
+os.environ["WANDB_DISABLED"] = "true"
 local_files_only = True
 try:
     urllib.request.urlopen('http://google.com')
@@ -48,7 +48,7 @@ def load_model(model_name: str, cache_dir: str = None, use_auth_token: bool = Fa
     return model
 
 
-def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, dataset: str, dataset_name: str,
+def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_name: str,
           dataset_column_question: str, dataset_column_passage: str, dataset_column_answer: str, dataset_split_train: str,
           dataset_split_validation: str, dataset_split_test: str, search_range_lr: List, search_range_epoch: List,
           search_list_batch: List, down_sample_train: int, down_sample_validation: int, random_seed: int,
@@ -83,8 +83,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
         model_name, cache_dir=cache_dir, local_files_only=local_files_only, use_auth_token=use_auth_token)
     dataset_split = {
         "train": [dataset_split_train, down_sample_train],
-        "validation": [dataset_split_validation, down_sample_validation],
-        "test": [dataset_split_test, None]
+        "validation": [dataset_split_validation, down_sample_validation]
     }
     dataset_instance = load_dataset(dataset, dataset_name, use_auth_token=use_auth_token)
     tokenized_dataset = {}
@@ -93,7 +92,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
         tmp = dataset_instance[s_dataset]
         tmp.shuffle(random_seed)
         for i in tmp:
-            model_inputs = tokenizer(f"{task_prefix}: {i[dataset_column_passage]} {i[dataset_column_question]}", truncation=True)
+            model_inputs = tokenizer(f"context: {i[dataset_column_passage]}, question: {i[dataset_column_question]}", truncation=True)
             model_inputs['labels'] = tokenizer(text_target=i[dataset_column_answer], truncation=True)['input_ids']
             tokenized_dataset[s].append(model_inputs)
 
@@ -101,7 +100,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
             tokenized_dataset[f"{s}_ds"] = []
             tmp = tmp.select(list(range(down_sample)))
             for i in tmp:
-                model_inputs = tokenizer(f"{task_prefix}: {i[dataset_column_passage]} {i[dataset_column_question]}", truncation=True)
+                model_inputs = tokenizer(f"context: {i[dataset_column_passage]}, question: {i[dataset_column_question]}", truncation=True)
                 model_inputs['labels'] = tokenizer(text_target=i[dataset_column_answer], truncation=True)['input_ids']
                 tokenized_dataset[f"{s}_ds"].append(model_inputs)
         else:
@@ -179,39 +178,48 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
         trainer.save_model(f"{output_dir}/model")
         tokenizer.save_pretrained(f"{output_dir}/model")
         logging.info(f"model saved at {output_dir}/model")
+        del trainer
+        gc.collect()
+        torch.cuda.empty_cache()
     else:
         logging.info("skip hyperparameter search & model training (already done)")
 
     # get metric on the test set
-    if 'test' in tokenized_dataset and not os.path.exists(f"{output_dir}/model/evaluation_metrics.json"):
+    if dataset_split_test is not None and not os.path.exists(f"{output_dir}/model/evaluation_metrics.json"):
         logging.info("run evaluation on test set")
-        model = load_model(
-                model_name=f"{output_dir}/model",
-                cache_dir=cache_dir,
-                use_auth_token=use_auth_token,
-                low_cpu_mem_usage=model_low_cpu_mem_usage)
-        trainer = Seq2SeqTrainer(
-            model=model,
-            args=Seq2SeqTrainingArguments(output_dir=f"{output_dir}/runs", evaluation_strategy="no"),
-            data_collator=transformers.DataCollatorForSeq2Seq(tokenizer, model=model),
-            eval_dataset=tokenized_dataset['test'],
-            compute_metrics=get_metric()
-        )
-        result = {k: v for k, v in trainer.evaluate().items()}
-        logging.info(json.dumps(result, indent=4))
+        if not os.path.exists(f"{output_dir}/model/prediction_test.txt"):
+            pipe = pipeline('text2text-generation', model=f"{output_dir}/model", device=1 if resources_per_trial['gpu'] > 0 else 0)
+            input_data = [f"context: {i[dataset_column_passage]}, question: {i[dataset_column_question]}" for i in dataset_instance[dataset_split_test]]
+            output = pipe(input_data)
+            output = [i['generated_text'] for i in output]
+            with open(f"{output_dir}/model/prediction_test.txt", "w") as f:
+                f.write("\n".join(output))
+        with open(f"{output_dir}/model/prediction_test.txt"):
+            output = [i for i in f.read().split("\n") if len(i) > 0]
+            predictions = [{"prediction_text": p, "id": str(_n)} for _n, p in enumerate(output)]
+        references = [{"answers": {"answer_start": [100], "text": [r[dataset_column_answer]]}, "id": str(_n)} for _n, r in enumerate(dataset_instance[dataset_split_test])]
+        eval_metric = metric.compute(predictions=predictions, references=references)
+        logging.info(json.dumps(eval_metric, indent=4))
         with open(f"{output_dir}/model/evaluation_metrics.json", 'w') as f:
-            json.dump(result, f)
+            json.dump(eval_metric, f)
 
     if model_alias is not None:
         assert model_organization is not None, "model_organization must be specified when model_alias is specified"
         logging.info('uploading to huggingface')
-        url = create_repo(model_alias, organization=model_organization, exist_ok=True)
-        args = {"use_auth_token": use_auth_token, "repo_url": url, "organization": model_organization}
-        model = load_model(model_name=f"{output_dir}/model", cache_dir=cache_dir, use_auth_token=use_auth_token, low_cpu_mem_usage=model_low_cpu_mem_usage)
+        args = {"use_auth_token": use_auth_token, "organization": model_organization}
+        model = load_model(model_name=f"{output_dir}/model")
         model.push_to_hub(model_alias, **args)
         tokenizer.push_to_hub(model_alias, **args)
+        repo = Repository(model_alias, organization=model_organization)
+        # repo = Repository(model_alias, f"{model_organization}/{model_alias}")
+
+        sample = [f"context: {i[dataset_column_passage]}, question: {i[dataset_column_question]}" for i in dataset_instance[dataset_split_train]][:3]
+        widget = "\n".join([f"- text: {t}\n  example_title: example {_n + 1}" for _n, t in enumerate(sample)])
         with open(f"{output_dir}/model/README.md", "w") as f:
-            readme = f"""
+            f.write(f"""
+---
+widget:{widget}
+---
 # {model_organization}/{model_alias}
 
 This is [{model_name}](https://huggingface.co/{opt.model}) fine-tuned on [{dataset} ({dataset_name})](https://huggingface.co/datasets/{dataset}).
@@ -222,14 +230,10 @@ This is [{model_name}](https://huggingface.co/{opt.model}) fine-tuned on [{datas
 from transformers import pipeline
 
 pipe = pipeline('text2text-generation', model="{model_organization}/{model_alias}")
-output = pipe("{task_prefix}:")
+output = pipe("{sample[0]}")
 ```
-        """
-        f.write(readme)
-    # if os.path.exists(self.best_run_hyperparameters_path):
-    #     shutil.copy2(self.best_run_hyperparameters_path, pj(model_alias, 'best_run_hyperparameters.json'))
-    # os.system(
-    #     f"cd {model_alias} && git lfs install && git add . && git commit -m 'model update' && git push && cd ../")
+        """)
+        repo.push_to_hub()
 
 
 if __name__ == '__main__':
@@ -237,7 +241,6 @@ if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
     parser = argparse.ArgumentParser(description='Seq2Seq LM Fine-tuning on QA.')
     parser.add_argument('-m', '--model-name', default='google/flan-t5-small', type=str)
-    parser.add_argument('--task-prefix', default='qa', type=str)
     parser.add_argument('--low-cpu-mem-usage', action='store_true')
     parser.add_argument('-d', '--dataset', default="cardiffnlp/super_tweeteval", type=str)
     parser.add_argument('--dataset-name', default="tweet_qa", type=str)
@@ -267,7 +270,6 @@ if __name__ == '__main__':
     train(model_name=opt.model_name,
           model_low_cpu_mem_usage=opt.low_cpu_mem_usage,
           dataset=opt.dataset,
-          task_prefix=opt.task_prefix,
           dataset_name=opt.dataset_name,
           dataset_column_question=opt.dataset_column_question,
           dataset_column_passage=opt.dataset_column_passage,
