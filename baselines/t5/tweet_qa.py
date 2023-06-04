@@ -1,5 +1,12 @@
 """
-python tweet_qa.py --use-auth-token --model-alias tmp --model-organization cardiffnlp
+python tweet_qa.py -m 'google/flan-t5-small' --model-alias 'flan-t5-small-tweetqa' --n-trials 20 \
+--use-auth-token --model-organization cardiffnlp
+python tweet_qa.py -m 'google/flan-t5-base' --model-alias 'flan-t5-base-tweetqa' --n-trials 20 \
+--use-auth-token --model-organization cardiffnlp
+python tweet_qa.py -m 'google/flan-t5-small' --model-alias 'flan-t5-small-tweetqa' --n-trials 20 \
+--use-auth-token --model-organization cardiffnlp
+python tweet_qa.py -m 'google/flan-t5-base' --model-alias 'flan-t5-base-tweetqa' --n-trials 20 \
+--use-auth-token --model-organization cardiffnlp
 """
 import json
 import logging
@@ -222,7 +229,7 @@ widget:{widget}
 ---
 # {model_organization}/{model_alias}
 
-This is [{model_name}](https://huggingface.co/{opt.model}) fine-tuned on [{dataset} ({dataset_name})](https://huggingface.co/datasets/{dataset}).
+This is [{model_name}](https://huggingface.co/{model_name}) fine-tuned on [{dataset} ({dataset_name})](https://huggingface.co/datasets/{dataset}).
 
 ### Usage
 
