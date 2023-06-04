@@ -82,6 +82,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
     metric = load("squad")
 
     def compute_metric(eval_pred):  # for parameter search
+        logging.info(str(eval_pred))
         pprint(eval_pred)
         predictions, references = eval_pred
         return metric.compute(predictions=predictions, references=references)['f1']
