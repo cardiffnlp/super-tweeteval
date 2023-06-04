@@ -1,20 +1,20 @@
 """
-python tweet_qa.py -m "google/flan-t5-small" --model-alias "flan-t5-small-tweetqa" --use-auth-token --model-organization "cardiffnlp"
+python tweet_qa.py -m google/flan-t5-small --model-alias "flan-t5-small-tweetqa" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
 rm -rf "flan-t5-small-tweetqa"
 
-python tweet_qa.py -m "google/flan-t5-base" --model-alias "flan-t5-base-tweetqa" --use-auth-token --model-organization "cardiffnlp"
+python tweet_qa.py -m google/flan-t5-base --model-alias "flan-t5-base-tweetqa" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
 rm -rf "flan-t5-base-tweetqa"
 
-python tweet_qa.py -m "t5-small" --model-alias "t5-small-tweetqa" --use-auth-token --model-organization "cardiffnlp"
+python tweet_qa.py -m t5-small --model-alias "t5-small-tweetqa" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
 rm -rf "t5-small-tweetqa"
 
-python tweet_qa.py -m "t5-base" --model-alias "t5-base-tweetqa" --use-auth-token --model-organization "cardiffnlp"
+python tweet_qa.py -m t5-base --model-alias "t5-base-tweetqa" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
 rm -rf "t5-base-tweetqa"
@@ -127,24 +127,18 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
 
     # metric
     metric = load("squad")
-
-    def get_metric(target_metric: str = None):
-        def compute_metric(eval_pred):  # for parameter search
-            predictions, reference_token_ids = eval_pred
-            # format reference
-            references_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in reference_token_ids]
-            references = [{"answers": {"answer_start": [100], "text": [r]}, "id": str(_n)} for _n, r in enumerate(references_decode)]
-            # format prediction
-            logit, loss = predictions
-            generation_token_id = logit.argmax(-1)
-            generation_token_id[logit.min(-1) == -100] = -100
-            generation_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in generation_token_id]
-            predictions = [{"prediction_text": p, "id": str(_n)} for _n, p in enumerate(generation_decode)]
-            if target_metric is not None:
-                return metric.compute(predictions=predictions, references=references)[target_metric]
-            return metric.compute(predictions=predictions, references=references)
-
-        return compute_metric
+    def compute_metric(eval_pred):  # for parameter search
+        predictions, reference_token_ids = eval_pred
+        # format reference
+        references_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in reference_token_ids]
+        references = [{"answers": {"answer_start": [100], "text": [r]}, "id": str(_n)} for _n, r in enumerate(references_decode)]
+        # format prediction
+        logit, loss = predictions
+        generation_token_id = logit.argmax(-1)
+        generation_token_id[logit.min(-1) == -100] = -100
+        generation_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in generation_token_id]
+        predictions = [{"prediction_text": p, "id": str(_n)} for _n, p in enumerate(generation_decode)]
+        return metric.compute(predictions=predictions, references=references)["f1"]
 
     if not os.path.exists(f"{output_dir}/model/pytorch_model.bin"):
         trainer = Seq2SeqTrainer(
@@ -162,7 +156,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
                 low_cpu_mem_usage=model_low_cpu_mem_usage)),
             train_dataset=tokenized_dataset['train_ds'],
             eval_dataset=tokenized_dataset['validation_ds'],
-            compute_metrics=get_metric("f1"),
+            compute_metrics=compute_metric,
             model_init=lambda x: load_model(
                 model_name=model_name,
                 cache_dir=cache_dir,
