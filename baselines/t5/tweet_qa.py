@@ -118,9 +118,10 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
         references = [{"answers": {"answer_start": [100], "text": [r]}, "id": str(_n)} for _n, r in enumerate(references_decode)]
         # format prediction
         print(len(predictions))
-        a, b = predictions
-        print(a.shape)
-        print(b.shape)
+        logit, loss = predictions
+        print(logit.shape)  # (1086, 21, 32128: vocab_size)
+        print(loss.shape)  # (1086, 106, 512: max_length)
+        print(logit)
         input()
         prediction = [{"prediction_text": p, "id": str(n)} for n, p in enumerate(prediction)]
 
