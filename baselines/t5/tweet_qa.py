@@ -240,11 +240,12 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         sample = [i for i in sample if "'" not in i and '"' not in i][:5]
         widget = "\n".join([f"- text: {t}\n  example_title: example {_n + 1}" for _n, t in enumerate(sample)])
         with open(f"{model_alias}/README.md", "w") as f:
+            # ---
+            # # widget:
+            # # {widget}
+            # # ---
+
             f.write(f"""
----
-widget:
-{widget}
----
 # {model_organization}/{model_alias}
 
 This is [{model_name}](https://huggingface.co/{model_name}) fine-tuned on [{dataset} ({dataset_name})](https://huggingface.co/datasets/{dataset}).
