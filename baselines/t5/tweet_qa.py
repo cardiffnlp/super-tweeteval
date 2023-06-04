@@ -222,14 +222,14 @@ This is [{model_name}](https://huggingface.co/{opt.model}) fine-tuned on [{datas
 from transformers import pipeline
 
 pipe = pipeline('text2text-generation', model="{model_organization}/{model_alias}")
-output = pipe("{task_prefix}: {}")
+output = pipe("{task_prefix}:")
 ```
         """
         f.write(readme)
-    if os.path.exists(self.best_run_hyperparameters_path):
-        shutil.copy2(self.best_run_hyperparameters_path, pj(model_alias, 'best_run_hyperparameters.json'))
-    os.system(
-        f"cd {model_alias} && git lfs install && git add . && git commit -m 'model update' && git push && cd ../")
+    # if os.path.exists(self.best_run_hyperparameters_path):
+    #     shutil.copy2(self.best_run_hyperparameters_path, pj(model_alias, 'best_run_hyperparameters.json'))
+    # os.system(
+    #     f"cd {model_alias} && git lfs install && git add . && git commit -m 'model update' && git push && cd ../")
 
 
 if __name__ == '__main__':
