@@ -87,6 +87,8 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
             print(i)
         pprint(eval_pred)
         predictions, references = eval_pred
+        print(predictions)
+        print(references)
         return metric.compute(predictions=predictions, references=references)['f1']
 
     def compute_metric_all(eval_pred):  # for final evaluation
