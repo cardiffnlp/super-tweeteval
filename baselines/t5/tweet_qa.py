@@ -1,14 +1,23 @@
 """
-python tweet_qa.py -m 'google/flan-t5-small' --model-alias 'flan-t5-small-tweetqa' --n-trials 20 \
---use-auth-token --model-organization cardiffnlp
+python tweet_qa.py -m "google/flan-t5-small" --model-alias "flan-t5-small-tweetqa" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
-python tweet_qa.py -m 'google/flan-t5-base' --model-alias 'flan-t5-base-tweetqa' --n-trials 20 \
---use-auth-token --model-organization cardiffnlp
-python tweet_qa.py -m 'google/flan-t5-small' --model-alias 'flan-t5-small-tweetqa' --n-trials 20 \
---use-auth-token --model-organization cardiffnlp
-python tweet_qa.py -m 'google/flan-t5-base' --model-alias 'flan-t5-base-tweetqa' --n-trials 20 \
---use-auth-token --model-organization cardiffnlp
+rm -rf "flan-t5-small-tweetqa"
+
+python tweet_qa.py -m "google/flan-t5-base" --model-alias "flan-t5-base-tweetqa" --use-auth-token --model-organization "cardiffnlp"
+rm -rf ray
+rm -rf ckpt
+rm -rf "flan-t5-base-tweetqa"
+
+python tweet_qa.py -m "t5-small" --model-alias "t5-small-tweetqa" --use-auth-token --model-organization "cardiffnlp"
+rm -rf ray
+rm -rf ckpt
+rm -rf "t5-small-tweetqa"
+
+python tweet_qa.py -m "t5-base" --model-alias "t5-base-tweetqa" --use-auth-token --model-organization "cardiffnlp"
+rm -rf ray
+rm -rf ckpt
+rm -rf "t5-base-tweetqa"
 """
 import json
 import logging
@@ -232,7 +241,8 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         with open(f"{model_alias}/README.md", "w") as f:
             f.write(f"""
 ---
-widget:{widget}
+widget:
+{widget}
 ---
 # {model_organization}/{model_alias}
 
@@ -271,7 +281,7 @@ if __name__ == '__main__':
     parser.add_argument('--down-sample-validation', default=2000, type=int)
     parser.add_argument('--random-seed', default=42, type=int)
     parser.add_argument('--use-auth-token', action='store_true')
-    parser.add_argument('--n-trials', default=10, type=int)
+    parser.add_argument('--n-trials', default=20, type=int)
     parser.add_argument('--eval-step', default=100, type=int)
     parser.add_argument('--parallel-cpu', action='store_true')
     parser.add_argument('--cache-dir', default=None, type=str)
