@@ -52,7 +52,6 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
           search_list_batch: List, down_sample_train: int, down_sample_validation: int, random_seed: int,
           use_auth_token: bool, n_trials: int, eval_step: int, parallel_cpu: bool, cache_dir: str, output_dir: str,
           ray_result_dir: str):
-    logging.info(f'[CONFIG]\n\t *LM: {model_name}, \n\t *Data: {dataset} ({dataset_name}), \n\t *Num of Trial: {n_trials}')
 
     # set up the output directory
     if output_dir is None:
@@ -60,7 +59,9 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, task_prefix: str, data
     ray_result_dir = ray_result_dir
     if ray_result_dir is None:
         ray_result_dir = f'ray/{os.path.basename(model_name)}.{os.path.basename(dataset)}.{dataset_name}'
-
+    logger = logging.getLogger()
+    logger.addHandler(logging.FileHandler(f'{output_dir}/logging.log'))
+    logging.info(f'[CONFIG]\n\t *LM: {model_name}, \n\t *Data: {dataset} ({dataset_name}), \n\t *Num of Trial: {n_trials}')
     # define search space
     search_range_lr = [1e-6, 1e-4] if search_range_lr is None else search_range_lr
     assert len(search_range_lr) == 2, f"`search_range_lr` should contain [min_lr, max_lr]: {search_range_lr}"
