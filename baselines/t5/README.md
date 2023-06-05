@@ -4,8 +4,8 @@
 - [x] Sentiment
 - [x] TempoWiC
 - [x] NERD
-- [*] Hate
-- [ ] Emoji
+- [x] Hate
+- [*] Emoji
 - [ ] Intimacy
 - [ ] Similarity
 - [ ] Emotion
