@@ -1,6 +1,6 @@
 """ Fine-tune T5 on tempo wic (two sentences and target word --> binary label)
-python tempo_wic.py -m google/flan-t5-small --model-alias "flan-t5-small-tempo_wic" --use-auth-token --model-organization "cardiffnlp"
-python tempo_wic.py -m google/flan-t5-base --model-alias "flan-t5-base-tempo_wic" --use-auth-token --model-organization "cardiffnlp"
+python tempo_wic.py -m google/flan-t5-small --model-alias "flan-t5-small-tempo-wic" --use-auth-token --model-organization "cardiffnlp"
+python tempo_wic.py -m google/flan-t5-base --model-alias "flan-t5-base-tempo-wic" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
 rm -rf "flan-t5-small-tweet-tempo_wic"
