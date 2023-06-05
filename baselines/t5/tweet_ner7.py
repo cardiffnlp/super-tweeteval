@@ -1,10 +1,10 @@
-""" Fine-tune T5 on topic classification (multi-label multi-class classification)
-python tweet_topic.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-topic" --use-auth-token --model-organization "cardiffnlp"
-python tweet_topic.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-topic" --use-auth-token --model-organization "cardiffnlp"
+""" Fine-tune T5 on NER
+python tweet_ner7.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"
+python tweet_ner7.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
-rm -rf "flan-t5-small-tweet-topic"
-rm -rf "flan-t5-base-tweet-topic"
+rm -rf "flan-t5-small-tweet-ner7"
+rm -rf "flan-t5-base-tweet-ner7"
 """
 import json
 import logging
@@ -99,6 +99,8 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         tmp.shuffle(random_seed)
         for i in tmp:
             model_inputs = tokenizer(i[dataset_column_text], truncation=True)
+            print(i)
+            print(i[dataset_column_label])
             model_inputs['labels'] = tokenizer(
                 text_target=",".join([f"{e}: {t}" for e, t in zip(i[dataset_column_label]['entity'], i[dataset_column_label]['type'])]), truncation=True)['input_ids']
             tokenized_dataset[s].append(model_inputs)
@@ -269,8 +271,8 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--model-name', default='google/flan-t5-small', type=str)
     parser.add_argument('--low-cpu-mem-usage', action='store_true')
     parser.add_argument('-d', '--dataset', default="cardiffnlp/super_tweeteval", type=str)
-    parser.add_argument('--dataset-name', default="tweet_topic", type=str)
-    parser.add_argument('--dataset-column-label', default="gold_label_list", type=str)
+    parser.add_argument('--dataset-name', default="tweet_ber7", type=str)
+    parser.add_argument('--dataset-column-label', default="entities", type=str)
     parser.add_argument('--dataset-column-text', default="text", type=str)
     parser.add_argument('--dataset-split-train', default="train", type=str)
     parser.add_argument('--dataset-split-validation', default="validation", type=str)
