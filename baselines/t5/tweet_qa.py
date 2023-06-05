@@ -72,7 +72,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
           dataset_split_validation: str, dataset_split_test: str, search_range_lr: List, search_range_epoch: List,
           search_list_batch: List, down_sample_train: int, down_sample_validation: int, random_seed: int,
           use_auth_token: bool, n_trials: int, eval_step: int, parallel_cpu: bool, cache_dir: str, output_dir: str,
-          ray_result_dir: str, model_alias: str, model_organization: str):
+          ray_result_dir: str, model_alias: str, model_organization: str, eval_batch_size: int = 16):
     """ fine-tune seq2seq model on qa """
     logging.info(f'[CONFIG]\n\t *LM: {model_name}, \n\t *Data: {dataset} ({dataset_name}), \n\t *Num of Trial: {n_trials}')
     # set up the output directory
@@ -204,7 +204,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         if not os.path.exists(f"{output_dir}/model/prediction_test.txt"):
             pipe = pipeline('text2text-generation', model=f"{output_dir}/model", device=1 if resources_per_trial['gpu'] > 0 else 0)
             input_data = [f"context: {i[dataset_column_passage]}, question: {i[dataset_column_question]}" for i in dataset_instance[dataset_split_test]]
-            output = pipe(input_data)
+            output = pipe(input_data, batch_size=eval_batch_size)
             output = [i['generated_text'] for i in output]
             with open(f"{output_dir}/model/prediction_test.txt", "w") as f:
                 f.write("\n".join(output))
