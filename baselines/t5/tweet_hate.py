@@ -15,13 +15,13 @@ import argparse
 import gc
 from typing import List
 from shutil import copyfile
+from statistics import mean
 
 import torch
 import transformers
 from datasets import load_dataset
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments, pipeline
 from ray import tune, init
-from evaluate import load
 from huggingface_hub import Repository
 
 
@@ -118,13 +118,13 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
     def compute_metric(eval_pred):  # for parameter search
         predictions, reference_token_ids = eval_pred
         # format reference
-        references_decode = [[tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True)] for r in reference_token_ids]
+        references_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in reference_token_ids]
         # format prediction
         logit, loss = predictions
         generation_token_id = logit.argmax(-1)
         generation_token_id[logit.min(-1) == -100] = -100
         generation_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in generation_token_id]
-        return {"bleu": metric.compute(predictions=generation_decode, references=references_decode)["bleu"]}
+        return {"exact_match": mean([int(g == r) for g, r in zip(generation_decode, references_decode)])}
 
     if not os.path.exists(f"{output_dir}/model/pytorch_model.bin"):
         trainer = Seq2SeqTrainer(
@@ -194,13 +194,12 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             with open(f"{output_dir}/model/prediction_test.txt", "w") as f:
                 f.write("\n".join(output))
         with open(f"{output_dir}/model/prediction_test.txt") as f:
-            output = [i for i in f.read().split("\n") if len(i) > 0]
+            output = [i for i in f.read().split("\n")]
         tmp = dataset_instance[dataset_split_test]
         id2label = dict(enumerate(tmp.features[dataset_column_label].names))
-        _references = [[id2label[_i[dataset_column_label]]] for _i in tmp]
-        eval_metric = metric.compute(predictions=output, references=_references)
+        _references = [id2label[_i[dataset_column_label]] for _i in tmp]
         # exact match
-        eval_metric['eval_exact_match'] = sum(int(_i == _j[0]) for _i, _j in zip(output, _references)) / len(output)
+        eval_metric = {'eval_exact_match': mean([int(_i == _j) for _i, _j in zip(output, _references)])}
         logging.info(json.dumps(eval_metric, indent=4))
         with open(f"{output_dir}/model/evaluation_metrics.json", 'w') as f:
             json.dump(eval_metric, f)
