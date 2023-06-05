@@ -271,7 +271,7 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--model-name', default='google/flan-t5-small', type=str)
     parser.add_argument('--low-cpu-mem-usage', action='store_true')
     parser.add_argument('-d', '--dataset', default="cardiffnlp/super_tweeteval", type=str)
-    parser.add_argument('--dataset-name', default="tweet_ber7", type=str)
+    parser.add_argument('--dataset-name', default="tweet_ner7", type=str)
     parser.add_argument('--dataset-column-label', default="entities", type=str)
     parser.add_argument('--dataset-column-text', default="text", type=str)
     parser.add_argument('--dataset-split-train', default="train", type=str)
