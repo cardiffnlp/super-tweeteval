@@ -1,10 +1,10 @@
-""" Fine-tune T5 on tempo wic (two sentences and target word --> binary label)
-python tempo_wic.py -m google/flan-t5-small --model-alias "flan-t5-small-tempo-wic" --use-auth-token --model-organization "cardiffnlp"
-python tempo_wic.py -m google/flan-t5-base --model-alias "flan-t5-base-tempo-wic" --use-auth-token --model-organization "cardiffnlp"
+""" Fine-tune T5 on tweet similarity (regression task)
+python tweet_similarity.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-similarity" --use-auth-token --model-organization "cardiffnlp"
+python tweet_similarity.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-similarity" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
-rm -rf "flan-t5-small-tweet-tempo-wic"
-rm -rf "flan-t5-base-tweet-tempo-wic"
+rm -rf "flan-t5-small-tweet-similarity"
+rm -rf "flan-t5-base-tweet-similarity"
 """
 import json
 import logging
@@ -55,7 +55,7 @@ def load_model(model_name: str, cache_dir: str = None, use_auth_token: bool = Fa
 
 
 def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_name: str, dataset_column_label: str,
-          dataset_column_target: str, dataset_column_text_1: str, dataset_column_text_2: str, dataset_split_train: str,
+          dataset_column_text_1: str, dataset_column_text_2: str, dataset_split_train: str,
           dataset_split_validation: str, dataset_split_test: str, search_range_lr: List, search_range_epoch: List,
           search_list_batch: List, down_sample_train: int, down_sample_validation: int, random_seed: int,
           use_auth_token: bool, n_trials: int, eval_step: int, parallel_cpu: bool, cache_dir: str, output_dir: str,
@@ -74,7 +74,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
     assert len(search_range_lr) == 2, f"`search_range_lr` should contain [min_lr, max_lr]: {search_range_lr}"
     search_range_epoch = [2, 6] if search_range_epoch is None else search_range_epoch
     assert len(search_range_epoch) == 2, f"`search_range_epoch` should contain [min_epoch, max_epoch]: {search_range_epoch}"
-    search_list_batch = [32, 64] if search_list_batch is None else search_list_batch
+    search_list_batch = [64, 128] if search_list_batch is None else search_list_batch
     search_space = {
         "learning_rate": tune.loguniform(search_range_lr[0], search_range_lr[1]),
         "num_train_epochs": tune.choice(list(range(search_range_epoch[0], search_range_epoch[1]))),
@@ -91,7 +91,6 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         "train": [dataset_split_train, down_sample_train],
         "validation": [dataset_split_validation, down_sample_validation]
     }
-    id2label = {0: "no", 1: "yes"}
     dataset_instance = load_dataset(dataset, dataset_name, use_auth_token=use_auth_token)
     tokenized_dataset = {}
     for s, (s_dataset, down_sample) in dataset_split.items():
@@ -99,16 +98,16 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         tmp = dataset_instance[s_dataset]
         tmp.shuffle(random_seed)
         for i in tmp:
-            model_inputs = tokenizer(f"context 1: {i[dataset_column_text_1]}, context 2: {i[dataset_column_text_2]}, target: {i[dataset_column_target]}", truncation=True)
-            model_inputs['labels'] = tokenizer(text_target=id2label[i[dataset_column_label]], truncation=True)['input_ids']
+            model_inputs = tokenizer(f"text 1: {i[dataset_column_text_1]}, text 2: {i[dataset_column_text_2]}", truncation=True)
+            model_inputs['labels'] = tokenizer(text_target=str(i[dataset_column_label]), truncation=True)['input_ids']
             tokenized_dataset[s].append(model_inputs)
 
         if down_sample is not None and len(tmp) > down_sample:
             tokenized_dataset[f"{s}_ds"] = []
             tmp = tmp.select(list(range(down_sample)))
             for i in tmp:
-                model_inputs = tokenizer(f"context 1: {i[dataset_column_text_1]}, context 2: {i[dataset_column_text_2]}, target: {i[dataset_column_target]}", truncation=True)
-                model_inputs['labels'] = tokenizer(text_target=id2label[i[dataset_column_label]], truncation=True)['input_ids']
+                model_inputs = tokenizer(f"text 1: {i[dataset_column_text_1]}, text 2: {i[dataset_column_text_2]}", truncation=True)
+                model_inputs['labels'] = tokenizer(text_target=str(i[dataset_column_label]), truncation=True)['input_ids']
                 tokenized_dataset[f"{s}_ds"].append(model_inputs)
         else:
             tokenized_dataset[f"{s}_ds"] = tokenized_dataset[s]
@@ -117,12 +116,21 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         predictions, reference_token_ids = eval_pred
         # format reference
         references_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in reference_token_ids]
+        references_decode = [float(_r) for _r in references_decode]
         # format prediction
         logit, loss = predictions
         generation_token_id = logit.argmax(-1)
         generation_token_id[logit.min(-1) == -100] = -100
         generation_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in generation_token_id]
-        return {"exact_match": mean([int(g == r) for g, r in zip(generation_decode, references_decode)])}
+        generation_score = []
+        for _r in generation_decode:
+            try:
+                _r = float(_r)
+            except ValueError:
+                _r = 100
+            generation_score.append(_r)
+
+        return {"mse": mean([(g - r)**2 for g, r in zip(generation_score, references_decode)])}
 
     if not os.path.exists(f"{output_dir}/model/pytorch_model.bin"):
         trainer = Seq2SeqTrainer(
@@ -153,7 +161,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             best_run = trainer.hyperparameter_search(
                 hp_space=lambda x: search_space,
                 local_dir=ray_result_dir,
-                direction="maximize",
+                direction="minimize",
                 backend="ray",
                 n_trials=n_trials,
                 resources_per_trial=resources_per_trial
@@ -186,17 +194,25 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         logging.info("run evaluation on test set")
         if not os.path.exists(f"{output_dir}/model/prediction_test.txt"):
             pipe = pipeline('text2text-generation', model=f"{output_dir}/model", device="cuda:0" if resources_per_trial['gpu'] > 0 else "cpu")
-            input_data = [f"context 1: {i[dataset_column_text_1]}, context 2: {i[dataset_column_text_2]}, target: {i[dataset_column_target]}" for i in dataset_instance[dataset_split_test]]
+            input_data = [f"text 1: {i[dataset_column_text_1]}, text 2: {i[dataset_column_text_2]}" for i in dataset_instance[dataset_split_test]]
             output = pipe(input_data, batch_size=eval_batch_size)
             output = [i['generated_text'] for i in output]
             with open(f"{output_dir}/model/prediction_test.txt", "w") as f:
                 f.write("\n".join(output))
         with open(f"{output_dir}/model/prediction_test.txt") as f:
             output = [i for i in f.read().split("\n")]
+        output_score = []
+        for i in output:
+            try:
+                i = float(i)
+            except ValueError:
+                i = 100
+            output_score.append(i)
+
         tmp = dataset_instance[dataset_split_test]
-        _references = [id2label[_i[dataset_column_label]] for _i in tmp]
+        _references = [float(_i[dataset_column_label]) for _i in tmp]
         # exact match
-        eval_metric = {'eval_exact_match': mean([int(_i == _j) for _i, _j in zip(output, _references)])}
+        eval_metric = {"eval_mse": mean([(g - r) ** 2 for g, r in zip(output_score, _references)])}
         logging.info(json.dumps(eval_metric, indent=4))
         with open(f"{output_dir}/model/evaluation_metrics.json", 'w') as f:
             json.dump(eval_metric, f)
@@ -214,7 +230,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             copyfile(f"{output_dir}/model/prediction_test.txt", f"{model_alias}/prediction_test.txt")
         if os.path.exists(f"{output_dir}/model/evaluation_metrics.json"):
             copyfile(f"{output_dir}/model/evaluation_metrics.json", f"{model_alias}/evaluation_metrics.json")
-        sample = [f"context 1: {i[dataset_column_text_1]}, context 2: {i[dataset_column_text_2]}, target: {i[dataset_column_target]}" for i in dataset_instance[dataset_split_train]]
+        sample = [f"text 1: {i[dataset_column_text_1]}, text 2: {i[dataset_column_text_2]}" for i in dataset_instance[dataset_split_train]]
         sample = [i for i in sample if '"' not in i and "'" not in i][:3]
         widget = "\n".join([f'- text: "{t}"\n  example_title: example {_n + 1}' for _n, t in enumerate(sample)])
         with open(f"{model_alias}/README.md", "w") as f:
@@ -243,15 +259,14 @@ output = pipe("{sample[0]}")
 if __name__ == '__main__':
     # arguments
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
-    parser = argparse.ArgumentParser(description='Seq2Seq LM Fine-tuning on TempoWiC.')
+    parser = argparse.ArgumentParser(description='Seq2Seq LM Fine-tuning on tweet similarity.')
     parser.add_argument('-m', '--model-name', default='google/flan-t5-small', type=str)
     parser.add_argument('--low-cpu-mem-usage', action='store_true')
     parser.add_argument('-d', '--dataset', default="cardiffnlp/super_tweeteval", type=str)
-    parser.add_argument('--dataset-name', default="tempo_wic", type=str)
-    parser.add_argument('--dataset-column-label', default="gold_label_binary", type=str)
+    parser.add_argument('--dataset-name', default="tweet_similarity", type=str)
+    parser.add_argument('--dataset-column-label', default="gold_score", type=str)
     parser.add_argument('--dataset-column-text-1', default="text_1", type=str)
     parser.add_argument('--dataset-column-text-2', default="text_2", type=str)
-    parser.add_argument('--dataset-column-target', default="target", type=str)
     parser.add_argument('--dataset-split-train', default="train", type=str)
     parser.add_argument('--dataset-split-validation', default="validation", type=str)
     parser.add_argument('--dataset-split-test', default="test", type=str)
@@ -278,8 +293,7 @@ if __name__ == '__main__':
           dataset_name=opt.dataset_name,
           dataset_column_label=opt.dataset_column_label,
           dataset_column_text_1=opt.dataset_column_text_1,
-          dataset_column_text_2=opt.dataset_column_text_1,
-          dataset_column_target=opt.dataset_column_target,
+          dataset_column_text_2=opt.dataset_column_text_2,
           dataset_split_train=opt.dataset_split_train,
           dataset_split_validation=opt.dataset_split_validation,
           dataset_split_test=opt.dataset_split_test,

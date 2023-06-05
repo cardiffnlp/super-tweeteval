@@ -55,7 +55,7 @@ def load_model(model_name: str, cache_dir: str = None, use_auth_token: bool = Fa
 
 
 def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_name: str, dataset_column_label: str,
-          dataset_column_target: str, dataset_column_context: str, dataset_column_definition: str, dataset_split_train: str,
+          dataset_column_target: str, dataset_column_text: str, dataset_column_definition: str, dataset_split_train: str,
           dataset_split_validation: str, dataset_split_test: str, search_range_lr: List, search_range_epoch: List,
           search_list_batch: List, down_sample_train: int, down_sample_validation: int, random_seed: int,
           use_auth_token: bool, n_trials: int, eval_step: int, parallel_cpu: bool, cache_dir: str, output_dir: str,
@@ -99,7 +99,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         tmp = dataset_instance[s_dataset]
         tmp.shuffle(random_seed)
         for i in tmp:
-            model_inputs = tokenizer(f"context: {i[dataset_column_context]}, definition: {i[dataset_column_definition]}, target: {i[dataset_column_target]}", truncation=True)
+            model_inputs = tokenizer(f"context: {i[dataset_column_text]}, definition: {i[dataset_column_definition]}, target: {i[dataset_column_target]}", truncation=True)
             model_inputs['labels'] = tokenizer(text_target=id2label[i[dataset_column_label]], truncation=True)['input_ids']
             tokenized_dataset[s].append(model_inputs)
 
@@ -107,7 +107,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             tokenized_dataset[f"{s}_ds"] = []
             tmp = tmp.select(list(range(down_sample)))
             for i in tmp:
-                model_inputs = tokenizer(f"context: {i[dataset_column_context]}, definition: {i[dataset_column_definition]}, target: {i[dataset_column_target]}", truncation=True)
+                model_inputs = tokenizer(f"context: {i[dataset_column_text]}, definition: {i[dataset_column_definition]}, target: {i[dataset_column_target]}", truncation=True)
                 model_inputs['labels'] = tokenizer(text_target=id2label[i[dataset_column_label]], truncation=True)['input_ids']
                 tokenized_dataset[f"{s}_ds"].append(model_inputs)
         else:
@@ -186,7 +186,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         logging.info("run evaluation on test set")
         if not os.path.exists(f"{output_dir}/model/prediction_test.txt"):
             pipe = pipeline('text2text-generation', model=f"{output_dir}/model", device="cuda:0" if resources_per_trial['gpu'] > 0 else "cpu")
-            input_data = [f"context: {i[dataset_column_context]}, definition: {i[dataset_column_definition]}, target: {i[dataset_column_target]}" for i in dataset_instance[dataset_split_test]]
+            input_data = [f"context: {i[dataset_column_text]}, definition: {i[dataset_column_definition]}, target: {i[dataset_column_target]}" for i in dataset_instance[dataset_split_test]]
             output = pipe(input_data, batch_size=eval_batch_size)
             output = [i['generated_text'] for i in output]
             with open(f"{output_dir}/model/prediction_test.txt", "w") as f:
@@ -214,7 +214,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             copyfile(f"{output_dir}/model/prediction_test.txt", f"{model_alias}/prediction_test.txt")
         if os.path.exists(f"{output_dir}/model/evaluation_metrics.json"):
             copyfile(f"{output_dir}/model/evaluation_metrics.json", f"{model_alias}/evaluation_metrics.json")
-        sample = [f"context: {i[dataset_column_context]}, definition: {i[dataset_column_definition]}, target: {i[dataset_column_target]}" for i in dataset_instance[dataset_split_train]]
+        sample = [f"context: {i[dataset_column_text]}, definition: {i[dataset_column_definition]}, target: {i[dataset_column_target]}" for i in dataset_instance[dataset_split_train]]
         sample = [i for i in sample if '"' not in i and "'" not in i][:3]
         widget = "\n".join([f'- text: "{t}"\n  example_title: example {_n + 1}' for _n, t in enumerate(sample)])
         with open(f"{model_alias}/README.md", "w") as f:
@@ -249,7 +249,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--dataset', default="cardiffnlp/super_tweeteval", type=str)
     parser.add_argument('--dataset-name', default="tweet_nerd", type=str)
     parser.add_argument('--dataset-column-label', default="gold_label_binary", type=str)
-    parser.add_argument('--dataset-column-context', default="text", type=str)
+    parser.add_argument('--dataset-column-text', default="text", type=str)
     parser.add_argument('--dataset-column-definition', default="definition", type=str)
     parser.add_argument('--dataset-column-target', default="target", type=str)
     parser.add_argument('--dataset-split-train', default="train", type=str)
@@ -277,7 +277,7 @@ if __name__ == '__main__':
           dataset=opt.dataset,
           dataset_name=opt.dataset_name,
           dataset_column_label=opt.dataset_column_label,
-          dataset_column_context=opt.dataset_column_context,
+          dataset_column_text=opt.dataset_column_text,
           dataset_column_definition=opt.dataset_column_definition,
           dataset_column_target=opt.dataset_column_target,
           dataset_split_train=opt.dataset_split_train,
