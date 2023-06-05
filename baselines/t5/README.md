@@ -2,11 +2,11 @@
 - [x] QG
 - [x] QA
 - [x] Sentiment
-- [ ] TempoWiC
-- [ ] NERD
-- [ ] Hate
-- [ ] Emotion
+- [x] TempoWiC
+- [x] NERD
+- [*] Hate
 - [ ] Emoji
-- [ ] Intimacy
+- [ ] Intimacy 
+- [ ] Emotion
 - [ ] Topic
 - [ ] NER

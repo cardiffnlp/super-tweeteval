@@ -1,10 +1,10 @@
-""" Fine-tune T5 on tweet nerd (one sentence, one definition, and target word --> binary label)
-python tweet_nerd.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-nerd" --use-auth-token --model-organization "cardiffnlp"
-python tweet_nerd.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-nerd" --use-auth-token --model-organization "cardiffnlp"
+""" Fine-tune T5 on emoji analysis (multi-class classification)
+python tweet_emoji.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-emoji" --use-auth-token --model-organization "cardiffnlp"
+python tweet_emoji.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-emoji" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
-rm -rf "flan-t5-small-tweet-nerd"
-rm -rf "flan-t5-base-tweet-nerd"
+rm -rf "flan-t5-small-tweet-emoji"
+rm -rf "flan-t5-base-tweet-emoji"
 """
 import json
 import logging
@@ -55,7 +55,7 @@ def load_model(model_name: str, cache_dir: str = None, use_auth_token: bool = Fa
 
 
 def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_name: str, dataset_column_label: str,
-          dataset_column_target: str, dataset_column_context: str, dataset_column_definition: str, dataset_split_train: str,
+          dataset_column_text: str, dataset_split_train: str,
           dataset_split_validation: str, dataset_split_test: str, search_range_lr: List, search_range_epoch: List,
           search_list_batch: List, down_sample_train: int, down_sample_validation: int, random_seed: int,
           use_auth_token: bool, n_trials: int, eval_step: int, parallel_cpu: bool, cache_dir: str, output_dir: str,
@@ -74,7 +74,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
     assert len(search_range_lr) == 2, f"`search_range_lr` should contain [min_lr, max_lr]: {search_range_lr}"
     search_range_epoch = [2, 6] if search_range_epoch is None else search_range_epoch
     assert len(search_range_epoch) == 2, f"`search_range_epoch` should contain [min_epoch, max_epoch]: {search_range_epoch}"
-    search_list_batch = [32, 64] if search_list_batch is None else search_list_batch
+    search_list_batch = [64, 128] if search_list_batch is None else search_list_batch
     search_space = {
         "learning_rate": tune.loguniform(search_range_lr[0], search_range_lr[1]),
         "num_train_epochs": tune.choice(list(range(search_range_epoch[0], search_range_epoch[1]))),
@@ -91,15 +91,15 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         "train": [dataset_split_train, down_sample_train],
         "validation": [dataset_split_validation, down_sample_validation]
     }
-    id2label = {0: "no", 1: "yes"}
     dataset_instance = load_dataset(dataset, dataset_name, use_auth_token=use_auth_token)
     tokenized_dataset = {}
     for s, (s_dataset, down_sample) in dataset_split.items():
         tokenized_dataset[s] = []
         tmp = dataset_instance[s_dataset]
+        id2label = dict(enumerate(tmp.features[dataset_column_label].names))
         tmp.shuffle(random_seed)
         for i in tmp:
-            model_inputs = tokenizer(f"context: {i[dataset_column_context]}, definition: {i[dataset_column_definition]}, target: {i[dataset_column_target]}", truncation=True)
+            model_inputs = tokenizer(i[dataset_column_text], truncation=True)
             model_inputs['labels'] = tokenizer(text_target=id2label[i[dataset_column_label]], truncation=True)['input_ids']
             tokenized_dataset[s].append(model_inputs)
 
@@ -107,7 +107,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             tokenized_dataset[f"{s}_ds"] = []
             tmp = tmp.select(list(range(down_sample)))
             for i in tmp:
-                model_inputs = tokenizer(f"context: {i[dataset_column_context]}, definition: {i[dataset_column_definition]}, target: {i[dataset_column_target]}", truncation=True)
+                model_inputs = tokenizer(i[dataset_column_text], truncation=True)
                 model_inputs['labels'] = tokenizer(text_target=id2label[i[dataset_column_label]], truncation=True)['input_ids']
                 tokenized_dataset[f"{s}_ds"].append(model_inputs)
         else:
@@ -186,7 +186,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         logging.info("run evaluation on test set")
         if not os.path.exists(f"{output_dir}/model/prediction_test.txt"):
             pipe = pipeline('text2text-generation', model=f"{output_dir}/model", device="cuda:0" if resources_per_trial['gpu'] > 0 else "cpu")
-            input_data = [f"context: {i[dataset_column_context]}, definition: {i[dataset_column_definition]}, target: {i[dataset_column_target]}" for i in dataset_instance[dataset_split_test]]
+            input_data = [i[dataset_column_text] for i in dataset_instance[dataset_split_test]]
             output = pipe(input_data, batch_size=eval_batch_size)
             output = [i['generated_text'] for i in output]
             with open(f"{output_dir}/model/prediction_test.txt", "w") as f:
@@ -194,6 +194,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         with open(f"{output_dir}/model/prediction_test.txt") as f:
             output = [i for i in f.read().split("\n")]
         tmp = dataset_instance[dataset_split_test]
+        id2label = dict(enumerate(tmp.features[dataset_column_label].names))
         _references = [id2label[_i[dataset_column_label]] for _i in tmp]
         # exact match
         eval_metric = {'eval_exact_match': mean([int(_i == _j) for _i, _j in zip(output, _references)])}
@@ -214,7 +215,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             copyfile(f"{output_dir}/model/prediction_test.txt", f"{model_alias}/prediction_test.txt")
         if os.path.exists(f"{output_dir}/model/evaluation_metrics.json"):
             copyfile(f"{output_dir}/model/evaluation_metrics.json", f"{model_alias}/evaluation_metrics.json")
-        sample = [f"context: {i[dataset_column_context]}, definition: {i[dataset_column_definition]}, target: {i[dataset_column_target]}" for i in dataset_instance[dataset_split_train]]
+        sample = [i[dataset_column_text] for i in dataset_instance[dataset_split_train]]
         sample = [i for i in sample if '"' not in i and "'" not in i][:3]
         widget = "\n".join([f'- text: "{t}"\n  example_title: example {_n + 1}' for _n, t in enumerate(sample)])
         with open(f"{model_alias}/README.md", "w") as f:
@@ -243,15 +244,13 @@ output = pipe("{sample[0]}")
 if __name__ == '__main__':
     # arguments
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
-    parser = argparse.ArgumentParser(description='Seq2Seq LM Fine-tuning on TweetNERD.')
+    parser = argparse.ArgumentParser(description='Seq2Seq LM Fine-tuning on emoji prediction.')
     parser.add_argument('-m', '--model-name', default='google/flan-t5-small', type=str)
     parser.add_argument('--low-cpu-mem-usage', action='store_true')
     parser.add_argument('-d', '--dataset', default="cardiffnlp/super_tweeteval", type=str)
-    parser.add_argument('--dataset-name', default="tweet_nerd", type=str)
-    parser.add_argument('--dataset-column-label', default="gold_label_binary", type=str)
-    parser.add_argument('--dataset-column-context', default="text", type=str)
-    parser.add_argument('--dataset-column-definition', default="definition", type=str)
-    parser.add_argument('--dataset-column-target', default="target", type=str)
+    parser.add_argument('--dataset-name', default="tweet_emoji", type=str)
+    parser.add_argument('--dataset-column-label', default="gold_label", type=str)
+    parser.add_argument('--dataset-column-text', default="text", type=str)
     parser.add_argument('--dataset-split-train', default="train", type=str)
     parser.add_argument('--dataset-split-validation', default="validation", type=str)
     parser.add_argument('--dataset-split-test', default="test", type=str)
@@ -277,9 +276,7 @@ if __name__ == '__main__':
           dataset=opt.dataset,
           dataset_name=opt.dataset_name,
           dataset_column_label=opt.dataset_column_label,
-          dataset_column_context=opt.dataset_column_context,
-          dataset_column_definition=opt.dataset_column_definition,
-          dataset_column_target=opt.dataset_column_target,
+          dataset_column_text=opt.dataset_column_text,
           dataset_split_train=opt.dataset_split_train,
           dataset_split_validation=opt.dataset_split_validation,
           dataset_split_test=opt.dataset_split_test,
