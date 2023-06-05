@@ -1,10 +1,10 @@
-""" Fine-tune T5 on emoji analysis (multi-class classification)
-python tweet_emoji.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-emoji" --use-auth-token --model-organization "cardiffnlp"
-python tweet_emoji.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-emoji" --use-auth-token --model-organization "cardiffnlp"
+""" Fine-tune T5 on tweet intimacy (regression task)
+python tweet_intimacy.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-intimacy" --use-auth-token --model-organization "cardiffnlp"
+python tweet_intimacy.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-intimacy" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
-rm -rf "flan-t5-small-tweet-emoji"
-rm -rf "flan-t5-base-tweet-emoji"
+rm -rf "flan-t5-small-tweet-intimacy"
+rm -rf "flan-t5-base-tweet-intimacy"
 """
 import json
 import logging
@@ -130,7 +130,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
                 _r = 100
             generation_score.append(_r)
 
-        return {"mse": mean([(g - r)**2 for g, r in zip(generation_decode, references_decode)])}
+        return {"mse": mean([(g - r)**2 for g, r in zip(generation_score, references_decode)])}
 
     if not os.path.exists(f"{output_dir}/model/pytorch_model.bin"):
         trainer = Seq2SeqTrainer(
