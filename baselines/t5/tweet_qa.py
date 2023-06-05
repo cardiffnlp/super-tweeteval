@@ -210,7 +210,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             output = [i['generated_text'] for i in output]
             with open(f"{output_dir}/model/prediction_test.txt", "w") as f:
                 f.write("\n".join(output))
-        with open(f"{output_dir}/model/prediction_test.txt"):
+        with open(f"{output_dir}/model/prediction_test.txt") as f:
             output = [i for i in f.read().split("\n") if len(i) > 0]
             _predictions = [{"prediction_text": p, "id": str(_n)} for _n, p in enumerate(output)]
         _references = [{"answers": {"answer_start": [100], "text": [r[dataset_column_answer]]}, "id": str(_n)} for _n, r in enumerate(dataset_instance[dataset_split_test])]
