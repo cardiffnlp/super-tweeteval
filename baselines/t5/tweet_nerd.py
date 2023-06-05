@@ -1,10 +1,10 @@
 """ Fine-tune T5 on tweet nerd (one sentence, one definition, and target word --> binary label)
-python tempo_wic.py -m google/flan-t5-small --model-alias "flan-t5-small-tempo_wic" --use-auth-token --model-organization "cardiffnlp"
-python tempo_wic.py -m google/flan-t5-base --model-alias "flan-t5-base-tempo_wic" --use-auth-token --model-organization "cardiffnlp"
+python tempo_nerd.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-nerd" --use-auth-token --model-organization "cardiffnlp"
+python tempo_nerd.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-nerd" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
-rm -rf "flan-t5-small-tweet-tempo_wic"
-rm -rf "flan-t5-base-tweet-tempo_wic"
+rm -rf "flan-t5-small-tweet-nerd"
+rm -rf "flan-t5-base-tweet-nerd"
 """
 import json
 import logging
@@ -247,7 +247,7 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--model-name', default='google/flan-t5-small', type=str)
     parser.add_argument('--low-cpu-mem-usage', action='store_true')
     parser.add_argument('-d', '--dataset', default="cardiffnlp/super_tweeteval", type=str)
-    parser.add_argument('--dataset-name', default="tempo_wic", type=str)
+    parser.add_argument('--dataset-name', default="tweet_nerd", type=str)
     parser.add_argument('--dataset-column-label', default="gold_label_binary", type=str)
     parser.add_argument('--dataset-column-context', default="text", type=str)
     parser.add_argument('--dataset-column-definition', default="definition", type=str)

@@ -2,7 +2,7 @@
 - [x] QG
 - [x] QA
 - [x] Sentiment
-- [ ] TempoWic
+- [ ] TempoWiC
 - [ ] NERD
 - [ ] Hate
 - [ ] Emotion

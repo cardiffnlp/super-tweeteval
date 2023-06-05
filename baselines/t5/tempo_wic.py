@@ -3,8 +3,8 @@ python tempo_wic.py -m google/flan-t5-small --model-alias "flan-t5-small-tempo-w
 python tempo_wic.py -m google/flan-t5-base --model-alias "flan-t5-base-tempo-wic" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
-rm -rf "flan-t5-small-tweet-tempo_wic"
-rm -rf "flan-t5-base-tweet-tempo_wic"
+rm -rf "flan-t5-small-tweet-tempo-wic"
+rm -rf "flan-t5-base-tweet-tempo-wic"
 """
 import json
 import logging
