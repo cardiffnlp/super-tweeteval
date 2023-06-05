@@ -5,9 +5,9 @@
 - [x] TempoWiC
 - [x] NERD
 - [x] Hate
+- [x] Intimacy
+- [-] Similarity
 - [*] Emoji
-- [ ] Intimacy
-- [ ] Similarity
 - [ ] Emotion
 - [ ] Topic
 - [ ] NER
