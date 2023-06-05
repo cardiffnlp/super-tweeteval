@@ -40,11 +40,11 @@ from huggingface_hub import Repository
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # turn-off the warning message
 os.environ["WANDB_DISABLED"] = "true"
-local_files_only = True
+local_files_only = False
 try:
     urllib.request.urlopen('http://google.com')
 except:
-    local_files_only = False
+    local_files_only = True
 
 
 def load_model(model_name: str, cache_dir: str = None, use_auth_token: bool = False, low_cpu_mem_usage: bool = False):
@@ -62,7 +62,9 @@ def load_model(model_name: str, cache_dir: str = None, use_auth_token: bool = Fa
         model_class = transformers.MBartForConditionalGeneration.from_pretrained
     else:
         raise ValueError(f'unsupported model type: {config.model_type}')
+    print(model_class)
     param = {'config': config, "local_files_only": local_files_only, "use_auth_token": use_auth_token, "low_cpu_mem_usage": low_cpu_mem_usage, "cache_dir": cache_dir}
+    print(param)
     model = model_class(model_name, **param)
     return model
 
