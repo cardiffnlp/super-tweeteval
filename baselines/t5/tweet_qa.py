@@ -1,23 +1,10 @@
 """
-python tweet_qa.py -m google/flan-t5-small --model-alias "flan-t5-small-tweetqa" --use-auth-token --model-organization "cardiffnlp"
+python tweet_qa.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-qa" --use-auth-token --model-organization "cardiffnlp"
+python tweet_qa.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-qa" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
-rm -rf "flan-t5-small-tweetqa"
-
-python tweet_qa.py -m google/flan-t5-base --model-alias "flan-t5-base-tweetqa" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "flan-t5-base-tweetqa"
-
-python tweet_qa.py -m t5-small --model-alias "t5-small-tweetqa" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "t5-small-tweetqa"
-
-python tweet_qa.py -m t5-base --model-alias "t5-base-tweetqa" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "t5-base-tweetqa"
+rm -rf "flan-t5-small-tweet-qa"
+rm -rf "flan-t5-base-tweet-qa"
 """
 import json
 import logging

@@ -1,23 +1,10 @@
 """
-python tweet_qg.py -m google/flan-t5-small --model-alias "flan-t5-small-tweetqg" --use-auth-token --model-organization "cardiffnlp"
+python tweet_sentiment.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-sentiment" --use-auth-token --model-organization "cardiffnlp"
+python tweet_sentiment.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-sentiment" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
-rm -rf "flan-t5-small-tweetqg"
-
-python tweet_qg.py -m google/flan-t5-base --model-alias "flan-t5-base-tweetqg" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "flan-t5-base-tweetqg"
-
-python tweet_qg.py -m t5-small --model-alias "t5-small-tweetqg" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "t5-small-tweetqg"
-
-python tweet_qg.py -m t5-base --model-alias "t5-base-tweetqg" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "t5-base-tweetqg"
+rm -rf "flan-t5-small-tweet-sentiment"
+rm -rf "flan-t5-base-tweet-sentiment"
 """
 import json
 import logging
@@ -113,7 +100,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         tmp.shuffle(random_seed)
         for i in tmp:
             model_inputs = tokenizer(f"context: {i[dataset_column_text]}, target: {i[dataset_column_target]}", truncation=True)
-            model_inputs['labels'] = tokenizer(text_target=[id2label[_i] for _i in i[dataset_column_label]], truncation=True)['input_ids']
+            model_inputs['labels'] = tokenizer(text_target=id2label[i[dataset_column_label]], truncation=True)['input_ids']
             tokenized_dataset[s].append(model_inputs)
 
         if down_sample is not None and len(tmp) > down_sample:
@@ -121,7 +108,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             tmp = tmp.select(list(range(down_sample)))
             for i in tmp:
                 model_inputs = tokenizer(f"context: {i[dataset_column_text]}, target: {i[dataset_column_target]}", truncation=True)
-                model_inputs['labels'] = tokenizer(text_target=[id2label[_i] for _i in i[dataset_column_label]], truncation=True)['input_ids']
+                model_inputs['labels'] = tokenizer(text_target=id2label[i[dataset_column_label]], truncation=True)['input_ids']
                 tokenized_dataset[f"{s}_ds"].append(model_inputs)
         else:
             tokenized_dataset[f"{s}_ds"] = tokenized_dataset[s]
@@ -208,11 +195,12 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
                 f.write("\n".join(output))
         with open(f"{output_dir}/model/prediction_test.txt") as f:
             output = [i for i in f.read().split("\n") if len(i) > 0]
-
-
-
-        _references = [[i[dataset_column_label]] for i in dataset_instance[dataset_split_test]]
+        tmp = dataset_instance[dataset_split_test]
+        id2label = dict(enumerate(tmp.features[dataset_column_label].names))
+        _references = [[id2label[_i[dataset_column_label]]] for _i in tmp]
         eval_metric = metric.compute(predictions=output, references=_references)
+        # exact match
+        eval_metric['eval_exact_match'] = sum(int(_i == _j[0]) for _i, _j in zip(output, _references)) / len(output)
         logging.info(json.dumps(eval_metric, indent=4))
         with open(f"{output_dir}/model/evaluation_metrics.json", 'w') as f:
             json.dump(eval_metric, f)
@@ -224,7 +212,6 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         model = load_model(model_name=f"{output_dir}/model")
         model.push_to_hub(model_alias, **args)
         tokenizer.push_to_hub(model_alias, **args)
-        # repo = Repository(model_alias, organization=model_organization)
         repo = Repository(model_alias, f"{model_organization}/{model_alias}")
         copyfile(f"{output_dir}/model/hyperparameters.json", f"{model_alias}/hyperparameters.json")
         if os.path.exists(f"{output_dir}/model/prediction_test.txt"):
