@@ -99,7 +99,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         tmp.shuffle(random_seed)
         for i in tmp:
             model_inputs = tokenizer(f"score intimacy: {i[dataset_column_text]}", truncation=True)
-            model_inputs['labels'] = tokenizer(text_target=str(i[dataset_column_label]), truncation=True)['input_ids']
+            model_inputs['labels'] = tokenizer(text_target=str(round(i[dataset_column_label])), truncation=True)['input_ids']
             tokenized_dataset[s].append(model_inputs)
 
         if down_sample is not None and len(tmp) > down_sample:
@@ -107,7 +107,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             tmp = tmp.select(list(range(down_sample)))
             for i in tmp:
                 model_inputs = tokenizer(f"score intimacy: {i[dataset_column_text]}", truncation=True)
-                model_inputs['labels'] = tokenizer(text_target=str(i[dataset_column_label]), truncation=True)['input_ids']
+                model_inputs['labels'] = tokenizer(text_target=str(round(i[dataset_column_label])), truncation=True)['input_ids']
                 tokenized_dataset[f"{s}_ds"].append(model_inputs)
         else:
             tokenized_dataset[f"{s}_ds"] = tokenized_dataset[s]
@@ -210,7 +210,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             output_score.append(i)
 
         tmp = dataset_instance[dataset_split_test]
-        _references = [float(_i[dataset_column_label]) for _i in tmp]
+        _references = [round(float(_i[dataset_column_label])) for _i in tmp]
         # exact match
         eval_metric = {"eval_mse": mean([(g - r) ** 2 for g, r in zip(output_score, _references)])}
         logging.info(json.dumps(eval_metric, indent=4))

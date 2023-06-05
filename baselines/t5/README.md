@@ -6,7 +6,8 @@
 - [x] NERD
 - [*] Hate
 - [ ] Emoji
-- [ ] Intimacy 
+- [ ] Intimacy
+- [ ] Similarity
 - [ ] Emotion
 - [ ] Topic
 - [ ] NER
