@@ -116,21 +116,12 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         predictions, reference_token_ids = eval_pred
         # format reference
         references_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in reference_token_ids]
-        references_decode = [float(_r) for _r in references_decode]
         # format prediction
         logit, loss = predictions
         generation_token_id = logit.argmax(-1)
         generation_token_id[logit.min(-1) == -100] = -100
         generation_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in generation_token_id]
-        generation_score = []
-        for _r in generation_decode:
-            try:
-                _r = float(_r)
-            except ValueError:
-                _r = 100
-            generation_score.append(_r)
-
-        return {"mse": mean([(g - r)**2 for g, r in zip(generation_score, references_decode)])}
+        return {"exact_match": mean([int(g == r) for g, r in zip(generation_decode, references_decode)])}
 
     if not os.path.exists(f"{output_dir}/model/pytorch_model.bin"):
         trainer = Seq2SeqTrainer(
@@ -201,18 +192,10 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
                 f.write("\n".join(output))
         with open(f"{output_dir}/model/prediction_test.txt") as f:
             output = [i for i in f.read().split("\n")]
-        output_score = []
-        for i in output:
-            try:
-                i = float(i)
-            except ValueError:
-                i = 100
-            output_score.append(i)
-
         tmp = dataset_instance[dataset_split_test]
-        _references = [round(float(_i[dataset_column_label])) for _i in tmp]
+        _references = [str(round(float(_i[dataset_column_label]))) for _i in tmp]
         # exact match
-        eval_metric = {"eval_mse": mean([(g - r) ** 2 for g, r in zip(output_score, _references)])}
+        eval_metric = {'eval_exact_match': mean([int(_i == _j) for _i, _j in zip(output, _references)])}
         logging.info(json.dumps(eval_metric, indent=4))
         with open(f"{output_dir}/model/evaluation_metrics.json", 'w') as f:
             json.dump(eval_metric, f)
