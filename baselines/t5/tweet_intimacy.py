@@ -152,7 +152,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             best_run = trainer.hyperparameter_search(
                 hp_space=lambda x: search_space,
                 local_dir=ray_result_dir,
-                direction="minimize",
+                direction="maximize",
                 backend="ray",
                 n_trials=n_trials,
                 resources_per_trial=resources_per_trial
