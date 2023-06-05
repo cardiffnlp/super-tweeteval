@@ -15,7 +15,6 @@ import argparse
 import gc
 from typing import List
 from shutil import copyfile
-from statistics import mean
 
 import torch
 import transformers
@@ -56,7 +55,7 @@ def load_model(model_name: str, cache_dir: str = None, use_auth_token: bool = Fa
 
 
 def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_name: str, dataset_column_label: str,
-          dataset_column_text: str, dataset_column_target: str, dataset_split_train: str,
+          dataset_column_target: str, dataset_column_context_1: str, dataset_column_context_2: str, dataset_split_train: str,
           dataset_split_validation: str, dataset_split_test: str, search_range_lr: List, search_range_epoch: List,
           search_list_batch: List, down_sample_train: int, down_sample_validation: int, random_seed: int,
           use_auth_token: bool, n_trials: int, eval_step: int, parallel_cpu: bool, cache_dir: str, output_dir: str,
@@ -92,15 +91,15 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         "train": [dataset_split_train, down_sample_train],
         "validation": [dataset_split_validation, down_sample_validation]
     }
+    id2label = {0: "no", 1: "yes"}
     dataset_instance = load_dataset(dataset, dataset_name, use_auth_token=use_auth_token)
     tokenized_dataset = {}
     for s, (s_dataset, down_sample) in dataset_split.items():
         tokenized_dataset[s] = []
         tmp = dataset_instance[s_dataset]
-        id2label = dict(enumerate(tmp.features[dataset_column_label].names))
         tmp.shuffle(random_seed)
         for i in tmp:
-            model_inputs = tokenizer(f"context: {i[dataset_column_text]}, target: {i[dataset_column_target]}", truncation=True)
+            model_inputs = tokenizer(f"context 1: {i[dataset_column_context_1]}, context 2: {i[dataset_column_context_2]}, target: {i[dataset_column_target]}", truncation=True)
             model_inputs['labels'] = tokenizer(text_target=id2label[i[dataset_column_label]], truncation=True)['input_ids']
             tokenized_dataset[s].append(model_inputs)
 
@@ -108,11 +107,13 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             tokenized_dataset[f"{s}_ds"] = []
             tmp = tmp.select(list(range(down_sample)))
             for i in tmp:
-                model_inputs = tokenizer(f"context: {i[dataset_column_text]}, target: {i[dataset_column_target]}", truncation=True)
+                model_inputs = tokenizer(f"context 1: {i[dataset_column_context_1]}, context 2: {i[dataset_column_context_2]}, target: {i[dataset_column_target]}", truncation=True)
                 model_inputs['labels'] = tokenizer(text_target=id2label[i[dataset_column_label]], truncation=True)['input_ids']
                 tokenized_dataset[f"{s}_ds"].append(model_inputs)
         else:
             tokenized_dataset[f"{s}_ds"] = tokenized_dataset[s]
+
+    metric = load("bleu")
 
     def compute_metric(eval_pred):  # for parameter search
         predictions, reference_token_ids = eval_pred
@@ -123,7 +124,8 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         generation_token_id = logit.argmax(-1)
         generation_token_id[logit.min(-1) == -100] = -100
         generation_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in generation_token_id]
-        return {"exact_match": mean([int(g == r) for g, r in zip(generation_decode, references_decode)])}
+
+        return {"exact_match": sum([1 if r == g else 0 for r, g in zip(references_decode, generation_decode)]) / len(references_decode)}
 
     if not os.path.exists(f"{output_dir}/model/pytorch_model.bin"):
         trainer = Seq2SeqTrainer(
@@ -196,9 +198,10 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             output = [i for i in f.read().split("\n") if len(i) > 0]
         tmp = dataset_instance[dataset_split_test]
         id2label = dict(enumerate(tmp.features[dataset_column_label].names))
-        _references = [id2label[_i[dataset_column_label]] for _i in tmp]
+        _references = [[id2label[_i[dataset_column_label]]] for _i in tmp]
+        eval_metric = metric.compute(predictions=output, references=_references)
         # exact match
-        eval_metric = {'eval_exact_match': mean([int(_i == _j) for _i, _j in zip(output, _references)])}
+        eval_metric['eval_exact_match'] = sum(int(_i == _j[0]) for _i, _j in zip(output, _references)) / len(output)
         logging.info(json.dumps(eval_metric, indent=4))
         with open(f"{output_dir}/model/evaluation_metrics.json", 'w') as f:
             json.dump(eval_metric, f)
