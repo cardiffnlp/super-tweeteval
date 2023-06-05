@@ -22,7 +22,6 @@ import transformers
 from datasets import load_dataset
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments, pipeline
 from ray import tune, init
-from evaluate import load
 from huggingface_hub import Repository
 
 

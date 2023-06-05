@@ -1,10 +1,10 @@
-""" Fine-tune T5 on sentiment analysis (multi-class classification)
-python tweet_sentiment.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-sentiment" --use-auth-token --model-organization "cardiffnlp"
-python tweet_sentiment.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-sentiment" --use-auth-token --model-organization "cardiffnlp"
+""" Fine-tune T5 on tempo wic (two sentences and target word --> binary label)
+python tempo_wic.py -m google/flan-t5-small --model-alias "flan-t5-small-tempo_wic" --use-auth-token --model-organization "cardiffnlp"
+python tempo_wic.py -m google/flan-t5-base --model-alias "flan-t5-base-tempo_wic" --use-auth-token --model-organization "cardiffnlp"
 rm -rf ray
 rm -rf ckpt
-rm -rf "flan-t5-small-tweet-sentiment"
-rm -rf "flan-t5-base-tweet-sentiment"
+rm -rf "flan-t5-small-tweet-tempo_wic"
+rm -rf "flan-t5-base-tweet-tempo_wic"
 """
 import json
 import logging
@@ -15,13 +15,13 @@ import argparse
 import gc
 from typing import List
 from shutil import copyfile
+from statistics import mean
 
 import torch
 import transformers
 from datasets import load_dataset
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments, pipeline
 from ray import tune, init
-from evaluate import load
 from huggingface_hub import Repository
 
 
@@ -113,8 +113,6 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         else:
             tokenized_dataset[f"{s}_ds"] = tokenized_dataset[s]
 
-    metric = load("bleu")
-
     def compute_metric(eval_pred):  # for parameter search
         predictions, reference_token_ids = eval_pred
         # format reference
@@ -124,8 +122,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         generation_token_id = logit.argmax(-1)
         generation_token_id[logit.min(-1) == -100] = -100
         generation_decode = [tokenizer.decode(list(filter(lambda x: x != -100, r)), skip_special_tokens=True) for r in generation_token_id]
-
-        return {"exact_match": sum([1 if r == g else 0 for r, g in zip(references_decode, generation_decode)]) / len(references_decode)}
+        return {"exact_match": mean([int(g == r) for g, r in zip(generation_decode, references_decode)])}
 
     if not os.path.exists(f"{output_dir}/model/pytorch_model.bin"):
         trainer = Seq2SeqTrainer(
@@ -189,7 +186,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         logging.info("run evaluation on test set")
         if not os.path.exists(f"{output_dir}/model/prediction_test.txt"):
             pipe = pipeline('text2text-generation', model=f"{output_dir}/model", device="cuda:0" if resources_per_trial['gpu'] > 0 else "cpu")
-            input_data = [f"context: {i[dataset_column_text]}, target: {i[dataset_column_target]}" for i in dataset_instance[dataset_split_test]]
+            input_data = [f"context 1: {i[dataset_column_context_1]}, context 2: {i[dataset_column_context_2]}, target: {i[dataset_column_target]}" for i in dataset_instance[dataset_split_test]]
             output = pipe(input_data, batch_size=eval_batch_size)
             output = [i['generated_text'] for i in output]
             with open(f"{output_dir}/model/prediction_test.txt", "w") as f:
@@ -197,11 +194,9 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         with open(f"{output_dir}/model/prediction_test.txt") as f:
             output = [i for i in f.read().split("\n") if len(i) > 0]
         tmp = dataset_instance[dataset_split_test]
-        id2label = dict(enumerate(tmp.features[dataset_column_label].names))
-        _references = [[id2label[_i[dataset_column_label]]] for _i in tmp]
-        eval_metric = metric.compute(predictions=output, references=_references)
+        _references = [id2label[_i[dataset_column_label]] for _i in tmp]
         # exact match
-        eval_metric['eval_exact_match'] = sum(int(_i == _j[0]) for _i, _j in zip(output, _references)) / len(output)
+        eval_metric = {'eval_exact_match': mean([int(_i == _j) for _i, _j in zip(output, _references)])}
         logging.info(json.dumps(eval_metric, indent=4))
         with open(f"{output_dir}/model/evaluation_metrics.json", 'w') as f:
             json.dump(eval_metric, f)
@@ -219,7 +214,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             copyfile(f"{output_dir}/model/prediction_test.txt", f"{model_alias}/prediction_test.txt")
         if os.path.exists(f"{output_dir}/model/evaluation_metrics.json"):
             copyfile(f"{output_dir}/model/evaluation_metrics.json", f"{model_alias}/evaluation_metrics.json")
-        sample = [f'context: {i[dataset_column_text]}, target: {i[dataset_column_target]}' for i in dataset_instance[dataset_split_train]]
+        sample = [f"context 1: {i[dataset_column_context_1]}, context 2: {i[dataset_column_context_2]}, target: {i[dataset_column_target]}" for i in dataset_instance[dataset_split_train]]
         sample = [i for i in sample if '"' not in i and "'" not in i][:3]
         widget = "\n".join([f'- text: "{t}"\n  example_title: example {_n + 1}' for _n, t in enumerate(sample)])
         with open(f"{model_alias}/README.md", "w") as f:
@@ -252,10 +247,11 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--model-name', default='google/flan-t5-small', type=str)
     parser.add_argument('--low-cpu-mem-usage', action='store_true')
     parser.add_argument('-d', '--dataset', default="cardiffnlp/super_tweeteval", type=str)
-    parser.add_argument('--dataset-name', default="tweet_sentiment", type=str)
-    parser.add_argument('--dataset-column-label', default="gold_label", type=str)
-    parser.add_argument('--dataset-column-text', default="text", type=str)
-    parser.add_argument('--dataset-column-target', default="target", type=str)
+    parser.add_argument('--dataset-name', default="tempo_wic", type=str)
+    parser.add_argument('--dataset-column-label', default="gold_label_binary", type=str)
+    parser.add_argument('--dataset-column-context-1', default="text_1", type=str)
+    parser.add_argument('--dataset-column-context-2', default="text_2", type=str)
+    parser.add_argument('--dataset-column-target', default="word", type=str)
     parser.add_argument('--dataset-split-train', default="train", type=str)
     parser.add_argument('--dataset-split-validation', default="validation", type=str)
     parser.add_argument('--dataset-split-test', default="test", type=str)
@@ -281,7 +277,8 @@ if __name__ == '__main__':
           dataset=opt.dataset,
           dataset_name=opt.dataset_name,
           dataset_column_label=opt.dataset_column_label,
-          dataset_column_text=opt.dataset_column_text,
+          dataset_column_context_1=opt.dataset_column_context_1,
+          dataset_column_context_2=opt.dataset_column_context_1,
           dataset_column_target=opt.dataset_column_target,
           dataset_split_train=opt.dataset_split_train,
           dataset_split_validation=opt.dataset_split_validation,
