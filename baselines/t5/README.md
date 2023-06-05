@@ -9,5 +9,5 @@
 - [x] Similarity
 - [*] Emoji
 - [*] Emotion
-- [ ] Topic
+- [*] Topic
 - [ ] NER
