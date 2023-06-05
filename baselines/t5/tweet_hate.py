@@ -113,7 +113,6 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         else:
             tokenized_dataset[f"{s}_ds"] = tokenized_dataset[s]
 
-    metric = load("bleu")
 
     def compute_metric(eval_pred):  # for parameter search
         predictions, reference_token_ids = eval_pred
