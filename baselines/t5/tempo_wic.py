@@ -243,7 +243,7 @@ output = pipe("{sample[0]}")
 if __name__ == '__main__':
     # arguments
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
-    parser = argparse.ArgumentParser(description='Seq2Seq LM Fine-tuning on QA.')
+    parser = argparse.ArgumentParser(description='Seq2Seq LM Fine-tuning on TempoWiC.')
     parser.add_argument('-m', '--model-name', default='google/flan-t5-small', type=str)
     parser.add_argument('--low-cpu-mem-usage', action='store_true')
     parser.add_argument('-d', '--dataset', default="cardiffnlp/super_tweeteval", type=str)
@@ -251,7 +251,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset-column-label', default="gold_label_binary", type=str)
     parser.add_argument('--dataset-column-context-1', default="text_1", type=str)
     parser.add_argument('--dataset-column-context-2', default="text_2", type=str)
-    parser.add_argument('--dataset-column-target', default="word", type=str)
+    parser.add_argument('--dataset-column-target', default="target", type=str)
     parser.add_argument('--dataset-split-train', default="train", type=str)
     parser.add_argument('--dataset-split-validation', default="validation", type=str)
     parser.add_argument('--dataset-split-test', default="test", type=str)

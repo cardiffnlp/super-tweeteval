@@ -1,0 +1,12 @@
+# Fine-tune T5 on SuperTweetEval
+- [x] QG
+- [x] QA
+- [x] Sentiment
+- [ ] TempoWic
+- [ ] NERD
+- [ ] Hate
+- [ ] Emotion
+- [ ] Emoji
+- [ ] Intimacy
+- [ ] Topic
+- [ ] NER

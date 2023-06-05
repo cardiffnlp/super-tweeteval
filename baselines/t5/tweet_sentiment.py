@@ -244,7 +244,7 @@ output = pipe("{sample[0]}")
 if __name__ == '__main__':
     # arguments
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
-    parser = argparse.ArgumentParser(description='Seq2Seq LM Fine-tuning on QA.')
+    parser = argparse.ArgumentParser(description='Seq2Seq LM Fine-tuning on sentiment analysis.')
     parser.add_argument('-m', '--model-name', default='google/flan-t5-small', type=str)
     parser.add_argument('--low-cpu-mem-usage', action='store_true')
     parser.add_argument('-d', '--dataset', default="cardiffnlp/super_tweeteval", type=str)
