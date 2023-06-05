@@ -8,6 +8,6 @@
 - [x] Intimacy
 - [x] Similarity
 - [*] Emoji
-- [ ] Emotion
+- [*] Emotion
 - [ ] Topic
 - [ ] NER
