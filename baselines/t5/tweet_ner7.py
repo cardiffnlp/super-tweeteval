@@ -99,8 +99,6 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         tmp.shuffle(random_seed)
         for i in tmp:
             model_inputs = tokenizer(i[dataset_column_text], truncation=True)
-            print(i)
-            print(i[dataset_column_label])
             model_inputs['labels'] = tokenizer(
                 text_target=",".join([f"{e}: {t}" for e, t in zip(i[dataset_column_label]['entity'], i[dataset_column_label]['type'])]), truncation=True)['input_ids']
             tokenized_dataset[s].append(model_inputs)
