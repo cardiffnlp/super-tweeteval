@@ -202,7 +202,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
     if dataset_split_test is not None and not os.path.exists(f"{output_dir}/model/evaluation_metrics.json"):
         logging.info("run evaluation on test set")
         if not os.path.exists(f"{output_dir}/model/prediction_test.txt"):
-            pipe = pipeline('text2text-generation', model=f"{output_dir}/model", device=1 if resources_per_trial['gpu'] > 0 else 0)
+            pipe = pipeline('text2text-generation', model=f"{output_dir}/model", device="cuda:1" if resources_per_trial['gpu'] > 0 else "cpu")
             input_data = [f"context: {i[dataset_column_passage]}, question: {i[dataset_column_question]}" for i in dataset_instance[dataset_split_test]]
             output = pipe(input_data, batch_size=eval_batch_size)
             output = [i['generated_text'] for i in output]
