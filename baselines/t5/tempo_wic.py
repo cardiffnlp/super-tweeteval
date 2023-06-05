@@ -74,7 +74,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
     assert len(search_range_lr) == 2, f"`search_range_lr` should contain [min_lr, max_lr]: {search_range_lr}"
     search_range_epoch = [2, 6] if search_range_epoch is None else search_range_epoch
     assert len(search_range_epoch) == 2, f"`search_range_epoch` should contain [min_epoch, max_epoch]: {search_range_epoch}"
-    search_list_batch = [64, 128] if search_list_batch is None else search_list_batch
+    search_list_batch = [32, 64] if search_list_batch is None else search_list_batch
     search_space = {
         "learning_rate": tune.loguniform(search_range_lr[0], search_range_lr[1]),
         "num_train_epochs": tune.choice(list(range(search_range_epoch[0], search_range_epoch[1]))),
