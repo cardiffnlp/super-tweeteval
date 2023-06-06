@@ -18,17 +18,15 @@ data = load_dataset("cardiffnlp/super_tweeteval", "tweet_ner7", use_auth_token=T
 labels = [
     'B-corporation', 'B-creative_work', 'B-event', 'B-group', 'B-location', 'B-person', 'B-product',
     'I-corporation', 'I-creative_work', 'I-event', 'I-group', 'I-location', 'I-person', 'I-product', 'O']
+id2label = {i: label for i, label in enumerate(labels)}
+true_sequence = [[id2label[i] for i in ii] for ii in data['gold_label_sequence']]
+
 # metric
 metric = load("seqeval")
 with open(opt.prediction_file) as f:
-    _predictions = []
-    for i in f.read().split("\n"):
-        try:
-            _predictions.append(float(i))
-        except ValueError:
-            _predictions.append(0)
-    _references = data["gold_score"]
-eval_metric = metric.compute(predictions=_predictions, references=_references)
+    _predictions = [[id2label[j] if j in id2label else j for j in i.split('\t')] for i in f.read().split("\n")]
+eval_metric = metric.compute(predictions=_predictions, references=true_sequence)
+eval_metric = {'overall_f1': eval_metric['overall_f1']}
 logging.info(json.dumps(eval_metric, indent=4))
 with open(opt.output_file, 'w') as f:
     json.dump(eval_metric, f)
