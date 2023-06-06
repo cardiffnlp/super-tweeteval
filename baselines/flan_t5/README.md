@@ -1,16 +1,4 @@
 # Fine-tune T5 on SuperTweetEval
-- [x] QG
-- [x] QA
-- [x] Sentiment
-- [x] TempoWiC
-- [x] NERD
-- [x] Hate
-- [x] Intimacy
-- [x] Similarity
-- [x] Emoji
-- [x] Emotion
-- [x] Topic
-- [ ] NER
 
 ## Models
 - QA
