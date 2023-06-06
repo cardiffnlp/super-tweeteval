@@ -27,7 +27,7 @@ metric = load("seqeval")
 if opt.t2t_format:
     # format prediction file in IOB sequence
     with open(opt.prediction_file) as f:
-        output = [set(i.split(",")) for i in f.read().split("\n")]
+        output = [list(set(i.split(","))) for i in f.read().split("\n")]
     prediction_sequence = []
     for d, o in zip(data, output):
         tag_seq = ['O'] * len(d['text_tokenized'])
