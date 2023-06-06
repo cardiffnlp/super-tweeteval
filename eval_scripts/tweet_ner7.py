@@ -38,10 +38,10 @@ if opt.t2t_format:
             entity_tokens = entity.split(" ")
             try:
                 i = d['text_tokenized'].index(entity_tokens[0])
-                tag_seq[i] = f"B-{_type}"
+                tag_seq[i] = f"B-{_type.strip()}"
                 if len(entity_tokens) > 1:
                     for j in range(1, len(entity_tokens)):
-                        tag_seq[i + j] = f"I-{_type}"
+                        tag_seq[i + j] = f"I-{_type.strip()}"
             except ValueError:
                 continue
         prediction_sequence.append(tag_seq)
