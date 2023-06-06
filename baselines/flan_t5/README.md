@@ -11,3 +11,43 @@
 - [x] Emotion
 - [x] Topic
 - [ ] NER
+
+## Models
+QA 
+- https://huggingface.co/cardiffnlp/flan-t5-small-tweet-qa
+- https://huggingface.co/cardiffnlp/flan-t5-base-tweet-qa
+QG 
+- https://huggingface.co/cardiffnlp/flan-t5-small-tweet-qg
+- https://huggingface.co/cardiffnlp/flan-t5-base-tweet-qg
+Sentiment 
+- https://huggingface.co/cardiffnlp/flan-t5-small-tweet-sentiment
+- https://huggingface.co/cardiffnlp/flan-t5-base-tweet-sentiment
+TempoWiC 
+- https://huggingface.co/cardiffnlp/flan-t5-small-tempo-wic
+- https://huggingface.co/cardiffnlp/flan-t5-base-tempo-wic
+NERD 
+- https://huggingface.co/cardiffnlp/flan-t5-small-tweet-nerd
+- https://huggingface.co/cardiffnlp/flan-t5-base-tweet-nerd
+Hate 
+- https://huggingface.co/cardiffnlp/flan-t5-small-tweet-hate
+- https://huggingface.co/cardiffnlp/flan-t5-base-tweet-hate
+Intimacy 
+- https://huggingface.co/cardiffnlp/flan-t5-small-tweet-intimacy
+- https://huggingface.co/cardiffnlp/flan-t5-base-tweet-intimacy
+Similarity 
+- https://huggingface.co/cardiffnlp/flan-t5-small-tweet-similarity
+- https://huggingface.co/cardiffnlp/flan-t5-base-tweet-similarity
+Emoji 
+- https://huggingface.co/cardiffnlp/flan-t5-small-tweet-emoji
+- https://huggingface.co/cardiffnlp/flan-t5-base-tweet-emoji
+- Emotion 
+- https://huggingface.co/cardiffnlp/flan-t5-small-tweet-emotion
+- https://huggingface.co/cardiffnlp/flan-t5-base-tweet-emotion
+Topic 
+- https://huggingface.co/cardiffnlp/flan-t5-small-tweet-topic
+- https://huggingface.co/cardiffnlp/flan-t5-base-tweet-topic
+NER 
+- https://huggingface.co/cardiffnlp/flan-t5-small-tweet-ner7
+- https://huggingface.co/cardiffnlp/flan-t5-base-tweet-ner7
+
+Prediction files are [here](https://github.com/cardiffnlp/super-tweeteval/tree/main/eval_scripts/flan_t5_prediction_files).

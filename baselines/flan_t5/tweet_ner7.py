@@ -1,23 +1,9 @@
 """ Fine-tune T5 on NER
-python tweet_ner7.py --n-trials 10 -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"
-
-python tweet_ner7.py --output-dir tmp1 --n-trials 1 --search-list-batch 64 --search-range-epoch --search-range-lr 1e-6 5e-6 -m google/flan-t5-small --use-auth-token
-python tweet_ner7.py --output-dir tmp2 --n-trials 1 --search-list-batch 64 --search-range-lr 5e-6 1e-5 -m google/flan-t5-small --use-auth-token
-python tweet_ner7.py --output-dir tmp3 --n-trials 1 --search-list-batch 64 --search-range-lr 1e-5 5e-5 -m google/flan-t5-small --use-auth-token
-python tweet_ner7.py --output-dir tmp4 --n-trials 1 --search-list-batch 64 --search-range-lr 5e-5 1e-4 -m google/flan-t5-small --use-auth-token
-
-
-
-python tweet_ner7.py --output-dir tmp1 --n-trials 3 --search-list-batch 64 --search-range-lr 1e-6 5e-6 -m google/flan-t5-base --use-auth-token
-python tweet_ner7.py --output-dir tmp2 --n-trials 3 --search-list-batch 64 --search-range-lr 5e-6 1e-5 -m google/flan-t5-base --use-auth-token
-python tweet_ner7.py --output-dir tmp3 --n-trials 3 --search-list-batch 64 --search-range-lr 1e-5 5e-5 -m google/flan-t5-base --use-auth-token
-python tweet_ner7.py --output-dir tmp4 --n-trials 3 --search-list-batch 64 --search-range-lr 5e-5 1e-4 -m google/flan-t5-base --use-auth-token
-python tweet_ner7.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"
-
 # on two gpus
 python tweet_ner7.py --n-trials 10 -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"  --search-list-batch 32 64
-python tweet_ner7.py --n-trials 10 -m google/flan-t5-base --model-alias "flan-t5-base-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"  --search-list-batch 32
 python tweet_ner7.py --n-trials 5 -m google/flan-t5-base --model-alias "flan-t5-base-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"  --search-list-batch 32
+python tweet_ner7.py --output-dir tmp1 --n-trials 5 -m google/flan-t5-base --use-auth-token --search-list-batch 32 --search-range-lr 1e-6 1e-5
+python tweet_ner7.py --output-dir tmp2 --n-trials 5 -m google/flan-t5-base --use-auth-token --search-list-batch 32 --search-range-lr 1e-6 1e-5 --gradient-accumulation-steps 2
 
 rm -rf ray
 rm -rf ckpt
