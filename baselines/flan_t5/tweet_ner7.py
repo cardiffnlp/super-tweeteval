@@ -143,7 +143,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         trainer = Seq2SeqTrainer(
             # model=model,
             args=Seq2SeqTrainingArguments(
-                # gradient_checkpointing=True,
+                gradient_checkpointing=True,
                 gradient_accumulation_steps=gradient_accumulation_steps,
                 output_dir=f"{output_dir}/runs",
                 evaluation_strategy="steps",
