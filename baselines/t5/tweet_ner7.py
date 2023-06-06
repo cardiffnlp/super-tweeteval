@@ -325,4 +325,4 @@ if __name__ == '__main__':
           ray_result_dir=opt.ray_result_dir,
           model_alias=opt.model_alias,
           model_organization=opt.model_organization,
-          gradient_accumulation_steps=opt.gradient_accumulation_steps
+          gradient_accumulation_steps=opt.gradient_accumulation_steps)
