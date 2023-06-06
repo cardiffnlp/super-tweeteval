@@ -1,4 +1,3 @@
-""" SQuAD QG evaluation (sentence/answer level) """
 import logging
 import argparse
 import json
@@ -24,6 +23,7 @@ with open(opt.prediction_file) as f:
     _predictions = [{"prediction_text": p, "id": str(_n)} for _n, p in enumerate(output)]
 _references = [{"answers": {"answer_start": [100], "text": [r["gold_label_str"]]}, "id": str(_n)} for _n, r in enumerate(data)]
 eval_metric = metric.compute(predictions=_predictions, references=_references)
+eval_metric.pop("exact_match")
 logging.info(json.dumps(eval_metric, indent=4))
 with open(opt.output_file, 'w') as f:
     json.dump(eval_metric, f)
