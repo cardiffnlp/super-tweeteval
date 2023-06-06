@@ -31,7 +31,7 @@ if opt.t2t_format:
     prediction_sequence = []
     for d, o in zip(data, output):
         tag_seq = ['O'] * len(d['text_tokenized'])
-        for _o in o.split(","):
+        for _o in o:
             if len(_o.split(":")) != 2:
                 continue
             entity, _type = _o.split(":")
