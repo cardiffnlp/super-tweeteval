@@ -160,11 +160,11 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         trainer = Seq2SeqTrainer(
             # model=model,
             args=Seq2SeqTrainingArguments(
-                # gradient_checkpointing=True,
-                gradient_accumulation_steps=gradient_accumulation_steps,
+                per_device_train_batch_size=opt.batch_size,
+                learning_rate=opt.lr,
+                num_train_epochs=opt.epoch,
                 output_dir=f"{output_dir}/runs",
-                evaluation_strategy="steps",
-                eval_steps=eval_step,
+                evaluation_strategy="no",
                 seed=random_seed
             ),
             data_collator=transformers.DataCollatorForSeq2Seq(tokenizer, model=load_model(
@@ -172,31 +172,9 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
                 cache_dir=cache_dir,
                 use_auth_token=use_auth_token,
                 low_cpu_mem_usage=model_low_cpu_mem_usage)),
-            train_dataset=tokenized_dataset['train_ds'],
-            eval_dataset=tokenized_dataset['validation_ds'],
-            compute_metrics=compute_metric,
-            model_init=lambda x: load_model(
-                model_name=model_name,
-                cache_dir=cache_dir,
-                use_auth_token=use_auth_token,
-                low_cpu_mem_usage=model_low_cpu_mem_usage)
+            train_dataset=tokenized_dataset['train_ds']
         )
         os.makedirs(f"{output_dir}/model", exist_ok=True)
-        if not os.path.exists(f"{output_dir}/model/hyperparameters.json"):
-            # grid search
-            best_run = trainer.hyperparameter_search(
-                hp_space=lambda x: search_space,
-                local_dir=ray_result_dir,
-                direction="maximize",
-                backend="ray",
-                n_trials=n_trials,
-                resources_per_trial=resources_per_trial
-            )
-            with open(f"{output_dir}/model/hyperparameters.json", 'w') as f:
-                json.dump(best_run.hyperparameters, f)
-        else:
-            logging.info("skip hyperparameter search (already done)")
-
         # fine-tuning with the best config
         logging.info(f"fine-tuning with the best config")
         with open(f"{output_dir}/model/hyperparameters.json") as f:
