@@ -6,7 +6,7 @@ rm -rf ckpt
 rm -rf "flan-t5-small-tweet-ner7"
 rm -rf "flan-t5-base-tweet-ner7"
 
-python tweet_ner7.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 32 64
+python tweet_ner7.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 8 16 --gradient-accumulation-steps 8
 
 python tweet_ner7.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp" --search-list-batch  64
 
@@ -64,7 +64,8 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
           dataset_split_validation: str, dataset_split_test: str, search_range_lr: List, search_range_epoch: List,
           search_list_batch: List, down_sample_train: int, down_sample_validation: int, random_seed: int,
           use_auth_token: bool, n_trials: int, eval_step: int, parallel_cpu: bool, cache_dir: str, output_dir: str,
-          ray_result_dir: str, model_alias: str, model_organization: str, eval_batch_size: int = 16):
+          ray_result_dir: str, model_alias: str, model_organization: str, eval_batch_size: int = 16,
+          gradient_accumulation_steps: int =1):
     """ fine-tune seq2seq model on qa """
     logging.info(f'[CONFIG]\n\t *LM: {model_name}, \n\t *Data: {dataset} ({dataset_name}), \n\t *Num of Trial: {n_trials}')
     # set up the output directory
@@ -145,7 +146,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             # model=model,
             args=Seq2SeqTrainingArguments(
                 gradient_checkpointing=True,
-                gradient_accumulation_steps=2,
+                gradient_accumulation_steps=gradient_accumulation_steps,
                 output_dir=f"{output_dir}/runs",
                 evaluation_strategy="steps",
                 eval_steps=eval_step,
@@ -297,6 +298,7 @@ if __name__ == '__main__':
     parser.add_argument('--ray-result-dir', default=None, type=str)
     parser.add_argument('--model-alias', default=None, type=str)
     parser.add_argument('--model-organization', default=None, type=str)
+    parser.add_argument('--gradient-accumulation-steps', default=1, type=int)
     opt = parser.parse_args()
 
     train(model_name=opt.model_name,
@@ -322,4 +324,5 @@ if __name__ == '__main__':
           output_dir=opt.output_dir,
           ray_result_dir=opt.ray_result_dir,
           model_alias=opt.model_alias,
-          model_organization=opt.model_organization)
+          model_organization=opt.model_organization,
+          gradient_accumulation_steps=opt.gradient_accumulation_steps
