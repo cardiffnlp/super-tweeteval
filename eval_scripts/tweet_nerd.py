@@ -17,9 +17,10 @@ opt = parser.parse_args()
 data = load_dataset("cardiffnlp/super_tweeteval", "tweet_nerd", use_auth_token=True, split="test")
 
 # metric
+label2id = {"no": 0, "yes": 1}
 with open(opt.prediction_file) as f:
-    _predictions = [i for i in f.read().split("\n")]
-    _references = data["gold_label_str"]
+    _predictions = [label2id[i] if i in label2id else i for i in f.read().split("\n")]
+    _references = data["gold_label_binary"]
 eval_metric = {"accuracy": mean(int(a == b) for a, b in zip(_predictions, _references))}
 logging.info(json.dumps(eval_metric, indent=4))
 with open(opt.output_file, 'w') as f:
