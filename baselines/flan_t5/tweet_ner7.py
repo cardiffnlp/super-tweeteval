@@ -1,8 +1,8 @@
 """ Fine-tune T5 on NER
-python tweet_ner7.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"
+python tweet_ner7.py --n-trials 10 -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"
 python tweet_ner7.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"
 # on two gpus
-python tweet_ner7.py --n-trials 10  -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"  --search-list-batch 32 64
+python tweet_ner7.py --n-trials 10 -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"  --search-list-batch 32 64
 python tweet_ner7.py --n-trials 10 -m google/flan-t5-base --model-alias "flan-t5-base-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"  --search-list-batch 32 64
 
 rm -rf ray
@@ -228,6 +228,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         logging.info(json.dumps(eval_metric, indent=4))
         with open(f"{output_dir}/model/evaluation_metrics.json", 'w') as f:
             json.dump(eval_metric, f)
+
 
     if model_alias is not None:
         assert model_organization is not None, "model_organization must be specified when model_alias is specified"
