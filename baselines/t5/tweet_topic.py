@@ -5,6 +5,8 @@ rm -rf ray
 rm -rf ckpt
 rm -rf "flan-t5-small-tweet-topic"
 rm -rf "flan-t5-base-tweet-topic"
+
+python tweet_topic.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-topic" --use-auth-token --model-organization "cardiffnlp" --search_list_batch 32 64
 """
 import json
 import logging
