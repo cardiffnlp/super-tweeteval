@@ -7,7 +7,7 @@
 - [x] Hate
 - [x] Intimacy
 - [x] Similarity
-- [*] Emoji
-- [*] Emotion
-- [*] Topic
+- [x] Emoji
+- [x] Emotion
+- [x] Topic
 - [ ] NER

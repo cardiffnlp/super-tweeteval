@@ -1,15 +1,13 @@
 """ Fine-tune T5 on NER
 python tweet_ner7.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"
 python tweet_ner7.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"
+# on two gpus
+python tweet_ner7.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"  --search-list-batch 32 64
+python tweet_ner7.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"  --search-list-batch 32 64
 rm -rf ray
 rm -rf ckpt
 rm -rf "flan-t5-small-tweet-ner7"
 rm -rf "flan-t5-base-tweet-ner7"
-
-python tweet_ner7.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 8 16 --gradient-accumulation-steps 8
-
-python tweet_ner7.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp" --search-list-batch  64
-
 """
 import json
 import logging
@@ -80,7 +78,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
     assert len(search_range_lr) == 2, f"`search_range_lr` should contain [min_lr, max_lr]: {search_range_lr}"
     search_range_epoch = [2, 6] if search_range_epoch is None else search_range_epoch
     assert len(search_range_epoch) == 2, f"`search_range_epoch` should contain [min_epoch, max_epoch]: {search_range_epoch}"
-    search_list_batch = [32, 64] if search_list_batch is None else search_list_batch
+    search_list_batch = [64, 128] if search_list_batch is None else search_list_batch
     search_space = {
         "learning_rate": tune.loguniform(search_range_lr[0], search_range_lr[1]),
         "num_train_epochs": tune.choice(list(range(search_range_epoch[0], search_range_epoch[1]))),
@@ -145,7 +143,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         trainer = Seq2SeqTrainer(
             # model=model,
             args=Seq2SeqTrainingArguments(
-                gradient_checkpointing=True,
+                # gradient_checkpointing=True,
                 gradient_accumulation_steps=gradient_accumulation_steps,
                 output_dir=f"{output_dir}/runs",
                 evaluation_strategy="steps",
