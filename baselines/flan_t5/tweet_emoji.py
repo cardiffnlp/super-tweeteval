@@ -1,6 +1,8 @@
 """ Fine-tune T5 on emoji analysis (multi-class classification)
 python tweet_emoji.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-emoji" --use-auth-token --model-organization "cardiffnlp"
 python tweet_emoji.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-emoji" --use-auth-token --model-organization "cardiffnlp"
+
+python tweet_emoji.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-emoji" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 32 64
 rm -rf ray
 rm -rf ckpt
 rm -rf "flan-t5-small-tweet-emoji"

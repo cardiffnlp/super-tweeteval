@@ -2,7 +2,6 @@ import logging
 import argparse
 import json
 from datasets import load_dataset
-from sklearn.metrics import mean_absolute_error
 import numpy as np
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
@@ -29,14 +28,14 @@ with open("./tweet_emoji_test_predictions.txt") as f:
             if label in label_names:
                 pred_instance.append(label_names.index(label))
             else:
-                pred_instance.append(-1) # emoji not in label_names
+                pred_instance.append(-1)  # emoji not in label_names
 
         predictions.append(pred_instance)
     
-# metric: accruracy at top 5
+# metric: accuracy at top 5
 gold_labels = np.array(data["gold_label"])
 
-eval_metric = {"accuracy-top_5": np.mean([1 if gold_labels[i] in predictions[i] else 0 for i in range(len(gold_labels))])}
+eval_metric = {"accuracy_top5": np.mean([1 if gold_labels[i] in predictions[i] else 0 for i in range(len(gold_labels))])}
 logging.info(json.dumps(eval_metric, indent=4))
 with open(opt.output_file, 'w') as f:
     json.dump(eval_metric, f)
