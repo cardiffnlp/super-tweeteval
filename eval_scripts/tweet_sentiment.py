@@ -20,7 +20,7 @@ label_names = data.features['gold_label'].names
 
 with open(opt.prediction_file) as f:
     output = [i for i in f.read().split("\n")]
-    predictions = [label_names.index(x) for x in output if x in label_names]
+    predictions = [label_names.index(x) if x in label_names else -1 for x in output]
     
 # metric: macro-f1
 gold_labels = data["gold_label"]
