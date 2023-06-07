@@ -95,7 +95,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
     }
     dataset_instance = load_dataset(dataset, dataset_name, use_auth_token=use_auth_token)
     # update tokenizer with the special token for each label
-    labels = dataset_instance[dataset_split['train']].features[dataset_column_label].names
+    labels = dataset_instance[dataset_split['train'][0]].features[dataset_column_label].names
     label_ids = [tokenizer.decode(tokenizer.encode(i), skip_special_tokens=True).strip().replace(",", "") for i in labels]
     label_sp_token = [f"<emoji_{i}>" for i in label_ids]
     label2sp_token = dict(zip(labels, label_sp_token))
