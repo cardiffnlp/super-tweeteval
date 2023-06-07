@@ -24,6 +24,7 @@ with open(opt.prediction_file) as f:
 _references = [{"answers": {"answer_start": [100], "text": [r["gold_label_str"]]}, "id": str(_n)} for _n, r in enumerate(data)]
 eval_metric = metric.compute(predictions=_predictions, references=_references)
 eval_metric.pop("exact_match")
+eval_metric["f1"] = eval_metric["f1"]/100
 logging.info(json.dumps(eval_metric, indent=4))
 with open(opt.output_file, 'w') as f:
     json.dump(eval_metric, f)
