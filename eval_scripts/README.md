@@ -13,6 +13,7 @@ python tweet_topic.py -p flan_t5_prediction_files/flan-t5-small-tweet-topic.txt 
 python tweet_sentiment.py -p flan_t5_prediction_files/flan-t5-small-tweet-sentiment.txt -o flan_t5_evaluation_outputs/flan-t5-small-tweet-sentiment.json
 python tweet_emotion.py -p flan_t5_prediction_files/flan-t5-small-tweet-emotion.txt -o flan_t5_evaluation_outputs/flan-t5-small-tweet-emotion.json
 python tweet_hate.py -p flan_t5_prediction_files/flan-t5-small-tweet-hate.txt -o flan_t5_evaluation_outputs/flan-t5-small-tweet-hate.json
+python tweet_emoji.py -p flan_t5_prediction_files/flan-t5-small-tweet-emoji.txt -o flan_t5_evaluation_outputs/flan-t5-small-tweet-emoji.json
 
 
 python tweet_qa.py -p flan_t5_prediction_files/flan-t5-base-tweet-qa.txt -o flan_t5_evaluation_outputs/flan-t5-base-tweet-qa.json

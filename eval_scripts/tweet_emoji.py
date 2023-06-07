@@ -18,7 +18,7 @@ data = load_dataset("cardiffnlp/super_tweeteval", "tweet_emoji", use_auth_token=
 label_names = data.features['gold_label'].names
 label_names = [x.split(',')[1] for x in label_names]
 
-with open("./tweet_emoji_test_predictions.txt") as f:
+with open(opt.prediction_file) as f:
     lines = f.read().split('\n')
     predictions = []
     for l in lines:
