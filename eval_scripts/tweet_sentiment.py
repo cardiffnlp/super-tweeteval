@@ -2,7 +2,6 @@ import logging
 import argparse
 import json
 from datasets import load_dataset
-from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import f1_score
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
