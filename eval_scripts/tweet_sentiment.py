@@ -30,6 +30,8 @@ labels = [0, 1, 2, 3, 4]
 mae = []
 sample_weight = np.ones(gold_labels.shape)
 for possible_class in labels:
+    print(len(gold_labels), len(predictions))
+    input()
     indices = np.flatnonzero(gold_labels == possible_class)
     mae.append(
         mean_absolute_error(
