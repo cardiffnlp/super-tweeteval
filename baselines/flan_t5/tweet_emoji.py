@@ -34,7 +34,7 @@ except:
     local_files_only = True
 
 
-def load_model(model_name: str, cache_dir: str = None, use_auth_token: bool = False, low_cpu_mem_usage: bool = False):
+def load_model(model_name: str, cache_dir: str = None, use_auth_token: bool = False, low_cpu_mem_usage: bool = False, vocab_size: int = None):
     """ load language model from huggingface model hub """
     # config & tokenizer
     config = transformers.AutoConfig.from_pretrained(
@@ -51,6 +51,8 @@ def load_model(model_name: str, cache_dir: str = None, use_auth_token: bool = Fa
         raise ValueError(f'unsupported model type: {config.model_type}')
     param = {'config': config, "local_files_only": local_files_only, "use_auth_token": use_auth_token, "low_cpu_mem_usage": low_cpu_mem_usage, "cache_dir": cache_dir}
     model = model_class(model_name, **param)
+    if vocab_size is not None:
+        model.resize_token_embeddings(vocab_size)
     return model
 
 
@@ -92,6 +94,12 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         "validation": [dataset_split_validation, down_sample_validation]
     }
     dataset_instance = load_dataset(dataset, dataset_name, use_auth_token=use_auth_token)
+    # update tokenizer with the special token for each label
+    labels = dataset_instance[dataset_split['train']].features[dataset_column_label].names
+    label_ids = [tokenizer.decode(tokenizer.encode(i), skip_special_tokens=True).strip().replace(",", "") for i in labels]
+    label_sp_token = [f"<emoji_{i}>" for i in label_ids]
+    label2sp_token = dict(zip(labels, label_sp_token))
+    tokenizer.add_special_tokens({'additional_special_tokens': label_sp_token})
     tokenized_dataset = {}
     for s, (s_dataset, down_sample) in dataset_split.items():
         tokenized_dataset[s] = []
@@ -100,7 +108,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
         tmp.shuffle(random_seed)
         for i in tmp:
             model_inputs = tokenizer(i[dataset_column_text], truncation=True)
-            model_inputs['labels'] = tokenizer(text_target=id2label[i[dataset_column_label]], truncation=True)['input_ids']
+            model_inputs['labels'] = tokenizer(text_target=label2sp_token[id2label[i[dataset_column_label]]], truncation=True)['input_ids']
             tokenized_dataset[s].append(model_inputs)
 
         if down_sample is not None and len(tmp) > down_sample:
@@ -108,7 +116,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             tmp = tmp.select(list(range(down_sample)))
             for i in tmp:
                 model_inputs = tokenizer(i[dataset_column_text], truncation=True)
-                model_inputs['labels'] = tokenizer(text_target=id2label[i[dataset_column_label]], truncation=True)['input_ids']
+                model_inputs['labels'] = tokenizer(text_target=label2sp_token[id2label[i[dataset_column_label]]], truncation=True)['input_ids']
                 tokenized_dataset[f"{s}_ds"].append(model_inputs)
         else:
             tokenized_dataset[f"{s}_ds"] = tokenized_dataset[s]
@@ -137,7 +145,8 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
                 model_name=model_name,
                 cache_dir=cache_dir,
                 use_auth_token=use_auth_token,
-                low_cpu_mem_usage=model_low_cpu_mem_usage)),
+                low_cpu_mem_usage=model_low_cpu_mem_usage,
+                vocab_size=len(tokenizer))),
             train_dataset=tokenized_dataset['train_ds'],
             eval_dataset=tokenized_dataset['validation_ds'],
             compute_metrics=compute_metric,
@@ -145,7 +154,8 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
                 model_name=model_name,
                 cache_dir=cache_dir,
                 use_auth_token=use_auth_token,
-                low_cpu_mem_usage=model_low_cpu_mem_usage)
+                low_cpu_mem_usage=model_low_cpu_mem_usage,
+                vocab_size=len(tokenizer))
         )
         os.makedirs(f"{output_dir}/model", exist_ok=True)
         if not os.path.exists(f"{output_dir}/model/hyperparameters.json"):
@@ -195,7 +205,7 @@ def train(model_name: str, model_low_cpu_mem_usage: bool, dataset: str, dataset_
             output = [i for i in f.read().split("\n")]
         tmp = dataset_instance[dataset_split_test]
         id2label = dict(enumerate(tmp.features[dataset_column_label].names))
-        _references = [id2label[_i[dataset_column_label]] for _i in tmp]
+        _references = [label2sp_token[id2label[_i[dataset_column_label]]] for _i in tmp]
         # exact match
         eval_metric = {'eval_exact_match': mean([int(_i == _j) for _i, _j in zip(output, _references)])}
         logging.info(json.dumps(eval_metric, indent=4))
