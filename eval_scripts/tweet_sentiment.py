@@ -26,15 +26,15 @@ with open(opt.prediction_file) as f:
 # from: https://github.com/scikit-learn-contrib/imbalanced-learn/blob/master/imblearn/metrics/_classification.py 
 gold_labels = np.array(data["gold_label"])
 
-labels = [0,1,2,3,4]
+labels = [0, 1, 2, 3, 4]
 mae = []
 sample_weight = np.ones(gold_labels.shape)
 for possible_class in labels:
     indices = np.flatnonzero(gold_labels == possible_class)
     mae.append(
         mean_absolute_error(
-            gold_labels[indices],
-            predictions[indices],
+            np.array(gold_labels)[indices],
+            np.array(predictions)[indices],
             sample_weight=sample_weight[indices],
         )
     )

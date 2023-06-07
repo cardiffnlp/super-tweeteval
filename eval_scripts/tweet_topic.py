@@ -31,7 +31,7 @@ with open(opt.prediction_file) as f:
 
 # metric
 gold_labels = data["gold_label_list"]
-eval_metric = {"f1-macro": f1_score(gold_labels, predictions, average='macro')}
+eval_metric = {"macro_f1": f1_score(gold_labels, predictions, average='macro')}
 logging.info(json.dumps(eval_metric, indent=4))
 with open(opt.output_file, 'w') as f:
     json.dump(eval_metric, f)
