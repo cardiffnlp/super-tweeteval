@@ -11,6 +11,8 @@ python tweet_similarity.py -p flan_t5_prediction_files/flan-t5-small-tweet-simil
 python tweet_ner7.py --t2t-format -p flan_t5_prediction_files/flan-t5-small-tweet-ner7.txt -o flan_t5_evaluation_outputs/flan-t5-small-tweet-ner7.json
 python tweet_topic.py -p flan_t5_prediction_files/flan-t5-small-tweet-topic.txt -o flan_t5_evaluation_outputs/flan-t5-small-tweet-topic.json
 python tweet_sentiment.py -p flan_t5_prediction_files/flan-t5-small-tweet-sentiment.txt -o flan_t5_evaluation_outputs/flan-t5-small-tweet-sentiment.json
+python tweet_emotion.py -p flan_t5_prediction_files/flan-t5-small-tweet-emotion.txt -o flan_t5_evaluation_outputs/flan-t5-small-tweet-emotion.json
+python tweet_hate.py -p flan_t5_prediction_files/flan-t5-small-tweet-hate.txt -o flan_t5_evaluation_outputs/flan-t5-small-tweet-hate.json
 
 
 python tweet_qa.py -p flan_t5_prediction_files/flan-t5-base-tweet-qa.txt -o flan_t5_evaluation_outputs/flan-t5-base-tweet-qa.json
@@ -22,4 +24,7 @@ python tweet_similarity.py -p flan_t5_prediction_files/flan-t5-base-tweet-simila
 python tweet_ner7.py --t2t-format -p flan_t5_prediction_files/flan-t5-base-tweet-ner7.txt -o flan_t5_evaluation_outputs/flan-t5-base-tweet-ner7.json
 python tweet_topic.py -p flan_t5_prediction_files/flan-t5-base-tweet-topic.txt -o flan_t5_evaluation_outputs/flan-t5-base-tweet-topic.json
 python tweet_sentiment.py -p flan_t5_prediction_files/flan-t5-base-tweet-sentiment.txt -o flan_t5_evaluation_outputs/flan-t5-base-tweet-sentiment.json
+python tweet_emotion.py -p flan_t5_prediction_files/flan-t5-base-tweet-emotion.txt -o flan_t5_evaluation_outputs/flan-t5-base-tweet-emotion.json
+python tweet_hate.py -p flan_t5_prediction_files/flan-t5-base-tweet-hate.txt -o flan_t5_evaluation_outputs/flan-t5-base-tweet-hate.json
+
 ```
