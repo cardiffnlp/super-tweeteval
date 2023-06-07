@@ -14,7 +14,7 @@ class Classifier:
     def __init__(self, model_name: str = None):
         self.model = T5ForConditionalGeneration.from_pretrained(model_name)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.id2label = {self.tokenizer.convert_tokens_to_ids(f'<emoji_{i}>')[0]: label_names[i] for i in range(100)}
+        self.id2label = {self.tokenizer.convert_tokens_to_ids(f'<emoji_{i}>'): label_names[i] for i in range(100)}
         print(self.id2label)
 
         # GPU setup
