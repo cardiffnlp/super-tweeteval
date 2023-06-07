@@ -32,7 +32,7 @@ gold_labels_binary = [1 if x in list(range(7)) else 0 for x in gold_labels]
 f1_binary = f1_score(gold_labels_binary, predictions_binary, average='macro')
 
 
-eval_metric = {"(f1_bin + f1_multi)/2": (f1_multi+f1_binary)/2}
+eval_metric = {"combined_f1": (f1_multi+f1_binary)/2}
 logging.info(json.dumps(eval_metric, indent=4))
 with open(opt.output_file, 'w') as f:
     json.dump(eval_metric, f)
