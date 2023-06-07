@@ -3,7 +3,7 @@ import argparse
 import json
 from datasets import load_dataset
 from sklearn.metrics import mean_absolute_error
-import numpy as np
+from sklearn.metrics import f1_score
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -20,26 +20,13 @@ label_names = data.features['gold_label'].names
 
 with open(opt.prediction_file) as f:
     output = [i for i in f.read().split("\n")]
-    predictions = [label_names.index(x) if x in label_names else -1 for x in output ]
+    predictions = [label_names.index(x) if x in label_names else -1 for x in output]
     
-# metric: macro_averaged_mean_absolute_error
-# from: https://github.com/scikit-learn-contrib/imbalanced-learn/blob/master/imblearn/metrics/_classification.py 
-gold_labels = np.array(data["gold_label"])
+# metric: macro-f1
+gold_labels = data["gold_label"]
 
-labels = [0, 1, 2, 3, 4]
-mae = []
-sample_weight = np.ones(gold_labels.shape)
-for possible_class in labels:
-    indices = np.flatnonzero(gold_labels == possible_class)
-    mae.append(
-        mean_absolute_error(
-            np.array(gold_labels)[indices],
-            np.array(predictions)[indices],
-            sample_weight=sample_weight[indices],
-        )
-    )
-
-eval_metric = {"macro_averaged_mean_absolute_error": np.sum(mae) / len(mae)}
+f1_macro = f1_score(gold_labels, predictions, average='macro')
+eval_metric = {"macro_f1": f1_macro}
 logging.info(json.dumps(eval_metric, indent=4))
 with open(opt.output_file, 'w') as f:
     json.dump(eval_metric, f)
