@@ -27,5 +27,5 @@ python tweet_topic.py -p flan_t5_prediction_files/flan-t5-base-tweet-topic.txt -
 python tweet_sentiment.py -p flan_t5_prediction_files/flan-t5-base-tweet-sentiment.txt -o flan_t5_evaluation_outputs/flan-t5-base-tweet-sentiment.json
 python tweet_emotion.py -p flan_t5_prediction_files/flan-t5-base-tweet-emotion.txt -o flan_t5_evaluation_outputs/flan-t5-base-tweet-emotion.json
 python tweet_hate.py -p flan_t5_prediction_files/flan-t5-base-tweet-hate.txt -o flan_t5_evaluation_outputs/flan-t5-base-tweet-hate.json
-
+python tweet_emoji.py -p flan_t5_prediction_files/flan-t5-base-tweet-emoji.txt -o flan_t5_evaluation_outputs/flan-t5-base-tweet-emoji.json
 ```

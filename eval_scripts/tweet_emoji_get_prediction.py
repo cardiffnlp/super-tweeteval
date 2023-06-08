@@ -44,10 +44,10 @@ if __name__ == '__main__':
 
     model = Classifier("cardiffnlp/flan-t5-small-tweet-emoji")
     prediction = model.predict(data['text'])
-    with open("flan-t5-small-tweet-emoji.txt", "w") as f:
+    with open("flan_t5_prediction_files/flan-t5-small-tweet-emoji.txt", "w") as f:
         f.write("\n".join([",".join(p) for p in prediction]))
-    #
-    # model = Classifier("cardiffnlp/flan-t5-base-tweet-emoji")
-    # prediction = model.predict(data['text'])
-    # with open("flan-t5-base-tweet-emoji.txt", "w") as f:
-    #     f.write("\n".join([",".join(p) for p in prediction]))
+
+    model = Classifier("cardiffnlp/flan-t5-base-tweet-emoji")
+    prediction = model.predict(data['text'])
+    with open("flan_t5_prediction_files/flan-t5-base-tweet-emoji.txt", "w") as f:
+        f.write("\n".join([",".join(p) for p in prediction]))
