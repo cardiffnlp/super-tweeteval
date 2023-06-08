@@ -1,11 +1,4 @@
-""" Fine-tune T5 on hate tweet detection task (multi-class classification)
-python tweet_hate.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-hate" --use-auth-token --model-organization "cardiffnlp"
-python tweet_hate.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-hate" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "flan-t5-small-tweet-hate"
-rm -rf "flan-t5-base-tweet-hate"
-"""
+""" Fine-tune T5 on hate tweet detection task (multi-class classification) """
 import json
 import logging
 import os

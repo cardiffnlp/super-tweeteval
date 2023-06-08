@@ -1,11 +1,4 @@
-""" Fine-tune T5 on topic classification (multi-label multi-class classification)
-python tweet_emotion.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-emotion" --use-auth-token --model-organization "cardiffnlp"
-python tweet_emotion.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-emotion" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "flan-t5-small-tweet-emotion"
-rm -rf "flan-t5-base-tweet-emotion"
-"""
+""" Fine-tune T5 on topic classification (multi-label multi-class classification) """
 import json
 import logging
 import os

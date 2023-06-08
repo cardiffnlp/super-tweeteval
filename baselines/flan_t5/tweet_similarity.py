@@ -1,11 +1,4 @@
-""" Fine-tune T5 on tweet similarity (regression task)
-python tweet_similarity.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-similarity" --use-auth-token --model-organization "cardiffnlp"
-python tweet_similarity.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-similarity" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "flan-t5-small-tweet-similarity"
-rm -rf "flan-t5-base-tweet-similarity"
-"""
+""" Fine-tune T5 on tweet similarity (regression task) """
 import json
 import logging
 import os

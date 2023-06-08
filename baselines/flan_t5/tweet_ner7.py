@@ -1,15 +1,4 @@
-""" Fine-tune T5 on NER
-# on two gpus
-python tweet_ner7.py --n-trials 10 -m google/flan-t5-small --model-alias "flan-t5-small-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"  --search-list-batch 32 64
-python tweet_ner7.py --n-trials 5 -m google/flan-t5-base --model-alias "flan-t5-base-tweet-ner7" --use-auth-token --model-organization "cardiffnlp"  --search-list-batch 32
-python tweet_ner7.py --output-dir tmp1 --n-trials 5 -m google/flan-t5-base --use-auth-token --search-list-batch 32 --search-range-lr 1e-6 1e-5
-python tweet_ner7.py --output-dir tmp2 --n-trials 5 -m google/flan-t5-base --use-auth-token --search-list-batch 32 --search-range-lr 1e-6 1e-5 --gradient-accumulation-steps 2
-
-rm -rf ray
-rm -rf ckpt
-rm -rf "flan-t5-small-tweet-ner7"
-rm -rf "flan-t5-base-tweet-ner7"
-"""
+""" Fine-tune T5 on NER """
 import json
 import logging
 import os

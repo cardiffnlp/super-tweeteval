@@ -1,11 +1,4 @@
-""" Fine-tune T5 on sentiment analysis (multi-class classification)
-python tweet_sentiment.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-sentiment" --use-auth-token --model-organization "cardiffnlp"
-python tweet_sentiment.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-sentiment" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "flan-t5-small-tweet-sentiment"
-rm -rf "flan-t5-base-tweet-sentiment"
-"""
+""" Fine-tune T5 on sentiment analysis (multi-class classification) """
 import json
 import logging
 import os

@@ -1,11 +1,4 @@
-""" Fine-tune T5 on tweet nerd (one sentence, one definition, and target word --> binary label)
-python tweet_nerd.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-nerd" --use-auth-token --model-organization "cardiffnlp"
-python tweet_nerd.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-nerd" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "flan-t5-small-tweet-nerd"
-rm -rf "flan-t5-base-tweet-nerd"
-"""
+""" Fine-tune T5 on tweet nerd (one sentence, one definition, and target word --> binary label) """
 import json
 import logging
 import os

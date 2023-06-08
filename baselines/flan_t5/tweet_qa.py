@@ -1,11 +1,4 @@
-""" Fine-tune T5 on QA task  (conditional generation task)
-python tweet_qa.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-qa" --use-auth-token --model-organization "cardiffnlp"
-python tweet_qa.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-qa" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "flan-t5-small-tweet-qa"
-rm -rf "flan-t5-base-tweet-qa"
-"""
+""" Fine-tune T5 on QA task  (conditional generation task) """
 import json
 import logging
 import os

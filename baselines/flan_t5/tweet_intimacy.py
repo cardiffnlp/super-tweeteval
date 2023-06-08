@@ -1,11 +1,4 @@
-""" Fine-tune T5 on tweet intimacy (regression task)
-python tweet_intimacy.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-intimacy" --use-auth-token --model-organization "cardiffnlp"
-python tweet_intimacy.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-intimacy" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "flan-t5-small-tweet-intimacy"
-rm -rf "flan-t5-base-tweet-intimacy"
-"""
+""" Fine-tune T5 on tweet intimacy (regression task) """
 import json
 import logging
 import os

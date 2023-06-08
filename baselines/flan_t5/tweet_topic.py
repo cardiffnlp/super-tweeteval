@@ -1,13 +1,4 @@
-""" Fine-tune T5 on topic classification (multi-label multi-class classification)
-python tweet_topic.py -m google/flan-t5-small --model-alias "flan-t5-small-tweet-topic" --use-auth-token --model-organization "cardiffnlp"
-python tweet_topic.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-topic" --use-auth-token --model-organization "cardiffnlp"
-rm -rf ray
-rm -rf ckpt
-rm -rf "flan-t5-small-tweet-topic"
-rm -rf "flan-t5-base-tweet-topic"
-
-python tweet_topic.py -m google/flan-t5-base --model-alias "flan-t5-base-tweet-topic" --use-auth-token --model-organization "cardiffnlp" --search_list_batch 32 64
-"""
+""" Fine-tune T5 on topic classification (multi-label multi-class classification) """
 import json
 import logging
 import os

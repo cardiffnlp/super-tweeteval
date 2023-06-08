@@ -1,4 +1,81 @@
 # Fine-tune T5 on SuperTweetEval
+Model training example for `google/flan-t5-large`.
+```shell
+git clone https://github.com/cardiffnlp/super-tweeteval
+cd super-tweeteval/baselines/flan_t5
+
+# tempo_wic
+python tempo_wic.py -m google/flan-t5-large --model-alias "flan-t5-large-tempo-wic" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 64 128
+rm -rf ray
+rm -rf ckpt
+rm -rf "flan-t5-large-tempo-wic"
+
+# tweet_emoji
+python tweet_emoji.py -m google/flan-t5-large --model-alias "flan-t5-large-tweet-emoji" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 64 128
+rm -rf ray
+rm -rf ckpt
+rm -rf "flan-t5-large-tweet-emoji"
+
+# tweet_emotion
+python tweet_emotion.py -m google/flan-t5-large--model-alias "flan-t5-large-tweet-emotion" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 64 128
+rm -rf ray
+rm -rf ckpt
+rm -rf "flan-t5-large-tweet-emotion"
+
+# tweet_hate
+python tweet_hate.py -m google/flan-t5-large --model-alias "flan-t5-large-tweet-hate" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 64 128
+rm -rf ray
+rm -rf ckpt
+rm -rf "flan-t5-large-tweet-hate"
+
+# tweet_intimacy
+python tweet_intimacy.py -m google/flan-t5-large --model-alias "flan-t5-large-tweet-intimacy" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 64 128
+rm -rf ray
+rm -rf ckpt
+rm -rf "flan-t5-large-tweet-intimacy"
+
+# tweet_ner7
+python tweet_ner7.py -m google/flan-t5-large --model-alias "flan-t5-large-tweet-ner7" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 64 128
+rm -rf ray
+rm -rf ckpt
+rm -rf "flan-t5-large-tweet-ner7"
+
+# tweet_nerd
+python tweet_nerd.py -m google/flan-t5-large --model-alias "flan-t5-large-tweet-nerd" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 64 128
+rm -rf ray
+rm -rf ckpt
+rm -rf "flan-t5-large-tweet-nerd"
+
+# tweet_qa
+python tweet_qa.py -m google/flan-t5-large --model-alias "flan-t5-large-tweet-qa" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 64 128
+rm -rf ray
+rm -rf ckpt
+rm -rf "flan-t5-large-tweet-qa"
+
+# tweet_qg
+python tweet_qg.py -m google/flan-t5-large --model-alias "flan-t5-large-tweet-qg" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 64 128
+rm -rf ray
+rm -rf ckpt
+rm -rf "flan-t5-large-tweet-qg"
+
+# tweet_sentiment
+python tweet_sentiment.py -m google/flan-t5-large --model-alias "flan-t5-large-tweet-sentiment" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 64 128
+rm -rf ray
+rm -rf ckpt
+rm -rf "flan-t5-large-tweet-sentiment"
+
+# tweet_similarity
+python tweet_similarity.py -m google/flan-t5-large --model-alias "flan-t5-large-tweet-similarity" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 64 128
+rm -rf ray
+rm -rf ckpt
+rm -rf "flan-t5-large-tweet-similarity"
+
+# tweet_topic
+python tweet_topic.py -m google/flan-t5-large --model-alias "flan-t5-large-tweet-topic" --use-auth-token --model-organization "cardiffnlp" --search-list-batch 64 128
+rm -rf ray
+rm -rf ckpt
+rm -rf "flan-t5-large-tweet-topic"
+```
 
 ## Models
 - QA
